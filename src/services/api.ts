@@ -327,58 +327,117 @@ export const api = {
   },
 
   async getDashboardSummary(): Promise<DashboardSummary> {
-    // Fetch all needed stats from supabase manually to emulate dashboard summary
-    const [procurements, inspections, findings, corrective_actions, checklist_stages, checklist_items] = await Promise.all([
-      supabase.from('procurements').select('*', { count: 'exact', head: true }),
-      supabase.from('inspections').select('status', { count: 'exact' }),
-      supabase.from('findings').select('status, risk_level, estimated_financial_impact'),
-      supabase.from('corrective_actions').select('status, deadline'),
-      supabase.from('checklist_stages').select('*', { count: 'exact' }),
-      supabase.from('checklist_items').select('*', { count: 'exact', head: true })
+    const [
+      { data: procurementsData },
+      { data: inspections },
+      { data: findings },
+      { data: corrective_actions },
+      { data: checklist_stages },
+      { data: checklist_items },
+      { data: results },
+      { data: provinces }
+    ] = await Promise.all([
+      supabase.from('procurements').select('*, offices(name)'),
+      supabase.from('inspections').select('*'),
+      supabase.from('findings').select('*'),
+      supabase.from('corrective_actions').select('*'),
+      supabase.from('checklist_stages').select('*').order('sort_order'),
+      supabase.from('checklist_items').select('*'),
+      supabase.from('inspection_checklist_results').select('*'),
+      supabase.from('provinces').select('*')
     ]);
 
-    const totalFindings = findings.data?.length || 0;
-    const highCritical = findings.data?.filter(f => ['उच्च', 'अत्यन्त उच्च'].includes(f.risk_level)).length || 0;
-    const openFindings = findings.data?.filter(f => ['Open', 'Corrective Action Required'].includes(f.status)).length || 0;
-    const financialImpact = findings.data?.reduce((acc, curr) => acc + (Number(curr.estimated_financial_impact) || 0), 0) || 0;
-    
+    const totalFindings = findings?.length || 0;
+    const highCritical = findings?.filter(f => ['उच्च', 'अत्यन्त उच्च'].includes(f.risk_level)).length || 0;
+    const openFindings = findings?.filter(f => ['Open', 'Corrective Action Required'].includes(f.status)).length || 0;
+    const financialImpact = findings?.reduce((acc, curr) => acc + (Number(curr.estimated_financial_impact) || 0), 0) || 0;
+    const totalContractVolume = procurementsData?.reduce((acc, curr) => acc + (Number(curr.contract_amount) || 0), 0) || 0;
+
     const kpis = {
-      total_procurements: procurements.count || 0,
-      total_inspections: inspections.data?.length || 0,
-      in_progress_inspections: inspections.data?.filter(i => ['In Progress', 'Submitted', 'Under Review'].includes(i.status)).length || 0,
-      verified_inspections: inspections.data?.filter(i => i.status === 'Verified').length || 0,
+      total_procurements: procurementsData?.length || 0,
+      total_inspections: inspections?.length || 0,
+      in_progress_inspections: inspections?.filter(i => ['In Progress', 'Submitted', 'Under Review'].includes(i.status)).length || 0,
+      verified_inspections: inspections?.filter(i => i.status === 'Verified').length || 0,
       total_findings: totalFindings,
       high_critical_findings: highCritical,
       open_findings: openFindings,
-      overdue_corrective_actions: corrective_actions.data?.filter(c => new Date(c.deadline) < new Date() && !['सम्पन्न', 'प्रमाणित'].includes(c.status)).length || 0,
+      overdue_corrective_actions: corrective_actions?.filter(c => new Date(c.deadline) < new Date() && !['सम्पन्न', 'प्रमाणित'].includes(c.status)).length || 0,
       total_financial_impact: financialImpact,
-      total_contract_volume: 0, // Hard to do without reducing over all procurements which wasn't fully fetched
-      total_checklist_stages: checklist_stages.data?.length || 0,
-      total_checklist_items: checklist_items.count || 0
+      total_contract_volume: totalContractVolume,
+      total_checklist_stages: checklist_stages?.length || 0,
+      total_checklist_items: checklist_items?.filter(c => c.is_active).length || 0
     };
 
-    return {
-      kpis,
-      compliance: [
-        { compliance_status: 'परिपालन', count: 120 },
-        { compliance_status: 'आंशिक परिपालन', count: 30 },
-        { compliance_status: 'परिपालन नभएको', count: 15 },
-      ], // Mocked because joining is too heavy here
-      risk: [
-        { risk_level: 'न्यून', count: 50 },
-        { risk_level: 'मध्यम', count: 30 },
-        { risk_level: 'उच्च', count: 10 },
-        { risk_level: 'अत्यन्त उच्च', count: 2 },
-      ],
-      stages: (checklist_stages.data || []).map(s => ({
+    // Compliance
+    const complianceMap: Record<string, number> = {};
+    (results || []).forEach(r => {
+      complianceMap[r.compliance_status] = (complianceMap[r.compliance_status] || 0) + 1;
+    });
+    const compliance = Object.keys(complianceMap).map(k => ({ compliance_status: k, count: complianceMap[k] }));
+
+    // Risk
+    const riskMap: Record<string, number> = {};
+    (findings || []).forEach(f => {
+      riskMap[f.risk_level] = (riskMap[f.risk_level] || 0) + 1;
+    });
+    const risk = Object.keys(riskMap).map(k => ({ risk_level: k, count: riskMap[k] }));
+
+    // Stages
+    const stages = (checklist_stages || []).map(s => {
+      const items = (checklist_items || []).filter(c => c.stage_id === s.id && c.is_active);
+      const stageFindings = (findings || []).filter(f => items.some(i => i.id === f.checklist_item_id));
+      return {
         stage_id: s.id,
         stage_number: s.stage_number,
         title_ne: s.title_ne,
         title_en: s.title_en,
-        items_count: 0, findings_count: 0, financial_impact: 0
-      })),
-      provinces: [],
-      alerts: []
+        items_count: items.length,
+        findings_count: stageFindings.length,
+        financial_impact: stageFindings.reduce((a, c) => a + (Number(c.estimated_financial_impact) || 0), 0)
+      };
+    });
+
+    // Provinces
+    const provincesList = (provinces || []).map(p => {
+      const procsInProv = (procurementsData || []).filter(pr => pr.province_id === p.id);
+      const inspCount = (inspections || []).filter(i => procsInProv.some(pr => pr.id === i.procurement_id)).length;
+      const findCount = (findings || []).filter(f => procsInProv.some(pr => pr.id === f.procurement_id)).length;
+      return {
+        id: p.id,
+        name_ne: p.name_ne,
+        name_en: p.name_en,
+        inspections_count: inspCount,
+        findings_count: findCount
+      };
+    });
+
+    // Alerts
+    const alertFindings = (findings || [])
+      .filter(f => ['उच्च', 'अत्यन्त उच्च'].includes(f.risk_level) || f.status === 'Corrective Action Required')
+      .sort((a, b) => b.id - a.id)
+      .slice(0, 6);
+    
+    const alerts = alertFindings.map(f => {
+      const proc = (procurementsData || []).find(p => p.id === f.procurement_id);
+      return {
+        id: f.id,
+        finding_code: f.finding_code,
+        title: f.title,
+        risk_level: f.risk_level,
+        estimated_financial_impact: f.estimated_financial_impact,
+        deadline: f.deadline,
+        procurement_title: proc?.title || '',
+        office_name: (proc?.offices as any)?.name || ''
+      };
+    });
+
+    return {
+      kpis,
+      compliance,
+      risk,
+      stages,
+      provinces: provincesList,
+      alerts
     };
   },
 
