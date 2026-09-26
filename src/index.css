@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Mukta', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+}
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+}
+
+/* Custom scrollbars for data tables and checklist lists */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Toast entrance animation */
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.toast-enter {
+  animation: toast-slide-in 0.22s ease-out;
+}
+
+/* Checklist item highlight when jumping to a pending item */
+@keyframes chk-jump-flash {
+  0% {
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.45);
+    background-color: #fef2f2;
+  }
+  100% {
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0);
+    background-color: transparent;
+  }
+}
+.chk-jump-highlight {
+  animation: chk-jump-flash 1.6s ease-out;
+  scroll-margin-top: 96px;
+}
