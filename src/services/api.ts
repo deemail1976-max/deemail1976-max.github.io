@@ -34,23 +34,65 @@ function getAuthHeaders(): HeadersInit {
 export const api = {
   // Auth
   async login(username: string, password: string): Promise<{ token: string; user: User }> {
-    const res = await fetch(`${API_BASE}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'लगइन असफल भयो।');
-    return data;
+    // Mock authentication for GitHub pages without a backend
+    const mockUsers: Record<string, { u: string; p: string; role: string; name: string; id: number }> = {
+      admin: { u: 'admin', p: 'admin123', role: 'admin', name: 'Admin User', id: 1 },
+      inspector: { u: 'inspector', p: 'inspector123', role: 'inspector', name: 'Inspector User', id: 2 },
+      reviewer: { u: 'reviewer', p: 'reviewer123', role: 'reviewer', name: 'Reviewer User', id: 3 },
+      viewer: { u: 'viewer', p: 'viewer123', role: 'public_officer', name: 'Public Officer', id: 4 },
+    };
+
+    const userKey = Object.keys(mockUsers).find(k => mockUsers[k].u === username && mockUsers[k].p === password);
+    if (userKey) {
+      const mockUser = mockUsers[userKey];
+      return {
+        token: `mock-token-${mockUser.role}`,
+        user: { id: mockUser.id, username: mockUser.u, role: mockUser.role as any, name: mockUser.name, isActive: true },
+      };
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'लगइन असफल भयो।');
+      return data;
+    } catch (error) {
+      throw new Error('लगइन असफल भयो। कृपया सही विवरण राख्नुहोस्।');
+    }
   },
 
   async getCurrentUser(): Promise<User> {
-    const res = await fetch(`${API_BASE}/auth/me`, {
-      headers: getAuthHeaders(),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'प्रयोगकर्ता विवरण प्राप्त गर्न सकिएन।');
-    return data;
+    const token = localStorage.getItem('nvc_token');
+    
+    // Mock get current user for GitHub pages
+    if (token?.startsWith('mock-token-')) {
+      const role = token.replace('mock-token-', '');
+      let username = role;
+      let name = role + ' User';
+      let id = 1;
+      
+      if (role === 'admin') { username = 'admin'; name = 'Admin User'; id = 1; }
+      else if (role === 'inspector') { username = 'inspector'; name = 'Inspector User'; id = 2; }
+      else if (role === 'reviewer') { username = 'reviewer'; name = 'Reviewer User'; id = 3; }
+      else if (role === 'public_officer') { username = 'viewer'; name = 'Public Officer'; id = 4; }
+      
+      return { id, username, role: role as any, name, isActive: true };
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        headers: getAuthHeaders(),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'प्रयोगकर्ता विवरण प्राप्त गर्न सकिएन।');
+      return data;
+    } catch (error) {
+      throw new Error('प्रयोगकर्ता विवरण प्राप्त गर्न सकिएन।');
+    }
   },
 
   async getUsers(): Promise<User[]> {
@@ -412,8 +454,27 @@ export const api = {
 
   // Dashboard Summary
   async getDashboardSummary(): Promise<DashboardSummary> {
-    const res = await fetch(`${API_BASE}/dashboard/summary`, { headers: getAuthHeaders() });
-    return res.json();
+    const token = localStorage.getItem('nvc_token');
+    if (token?.startsWith('mock-token-')) {
+      return {
+        total_procurements: 120,
+        completed_inspections: 45,
+        total_findings: 18,
+        pending_corrective_actions: 5
+      };
+    }
+    
+    try {
+      const res = await fetch(`${API_BASE}/dashboard/summary`, { headers: getAuthHeaders() });
+      return await res.json();
+    } catch (e) {
+      return {
+        total_procurements: 0,
+        completed_inspections: 0,
+        total_findings: 0,
+        pending_corrective_actions: 0
+      };
+    }
   },
 
   // Reports
