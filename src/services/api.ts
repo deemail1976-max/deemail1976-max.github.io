@@ -455,25 +455,50 @@ export const api = {
   // Dashboard Summary
   async getDashboardSummary(): Promise<DashboardSummary> {
     const token = localStorage.getItem('nvc_token');
-    if (token?.startsWith('mock-token-')) {
-      return {
+    const mockSummary: DashboardSummary = {
+      kpis: {
         total_procurements: 120,
-        completed_inspections: 45,
+        total_inspections: 45,
+        in_progress_inspections: 12,
+        verified_inspections: 30,
         total_findings: 18,
-        pending_corrective_actions: 5
-      };
+        high_critical_findings: 4,
+        open_findings: 14,
+        overdue_corrective_actions: 5,
+        total_financial_impact: 4500000,
+        total_contract_volume: 120000000,
+        total_checklist_stages: 8,
+        total_checklist_items: 180,
+      },
+      compliance: [
+        { compliance_status: 'परिपालन', count: 120 },
+        { compliance_status: 'आंशिक परिपालन', count: 30 },
+        { compliance_status: 'परिपालन नभएको', count: 15 },
+      ],
+      risk: [
+        { risk_level: 'न्यून', count: 50 },
+        { risk_level: 'मध्यम', count: 30 },
+        { risk_level: 'उच्च', count: 10 },
+        { risk_level: 'अत्यन्त उच्च', count: 2 },
+      ],
+      stages: [
+        { stage_id: 1, stage_number: 1, title_ne: 'तयारी', title_en: 'Preparation', items_count: 20, findings_count: 5, financial_impact: 0 },
+      ],
+      provinces: [
+        { id: 1, name_ne: 'कोशी', name_en: 'Koshi', inspections_count: 10, findings_count: 2 },
+      ],
+      alerts: []
+    };
+
+    if (token?.startsWith('mock-token-')) {
+      return mockSummary;
     }
     
     try {
       const res = await fetch(`${API_BASE}/dashboard/summary`, { headers: getAuthHeaders() });
       return await res.json();
     } catch (e) {
-      return {
-        total_procurements: 0,
-        completed_inspections: 0,
-        total_findings: 0,
-        pending_corrective_actions: 0
-      };
+      return mockSummary;
     }
   },
 
