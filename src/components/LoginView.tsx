@@ -12,7 +12,7 @@ export const LoginView: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (!username || !password) {
       setError('प्रयोगकर्ता नाम र पासवर्ड अनिवार्य छन्।');
       return;
@@ -40,7 +40,7 @@ export const LoginView: React.FC = () => {
           <img
             src="/emblem.webp"
             alt="निशाना छाप"
-            className="w-24 h-24 object-cover shadow-sm ring-4 ring-red-50 rounded-full"
+            className="w-24 h-24"
           />
           <div>
             <span className="inline-block text-xs font-bold tracking-wider text-red-800 uppercase bg-red-50 px-2 py-0.5 rounded border border-red-200 mb-2">
@@ -117,14 +117,14 @@ export const LoginView: React.FC = () => {
           </button>
         </form>
 
-        <div className="mt-4 text-center">
+        {/* <div className="mt-4 text-center">
           <a
             href="/checklist"
             className="text-sm font-semibold text-blue-700 hover:text-blue-900 hover:underline"
           >
-            Нийтийн худалдан авалтын гарын авлага, чеклист
+            सार्वजनिक खरिद निर्देशिका र चेकलिस्ट
           </a>
-        </div>
+        </div> */}
 
         <div className="mt-8 text-center text-xs text-slate-400 border-t border-slate-100 pt-4">
           <p>&copy; {new Date().getFullYear()} राष्ट्रिय सतर्कता केन्द्र। सबै अधिकार सुरक्षित।</p>
