@@ -17,7 +17,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, activeView }) => {
           {/* Left: Emblem & Title */}
           <div className="flex items-center space-x-3">
             <img
-              src="/emblem.webp"
+              src="./emblem.webp"
               alt="निशाना छाप"
               className="w-10 h-10 rounded-full object-cover shadow-xs ring-2 ring-red-100"
             />

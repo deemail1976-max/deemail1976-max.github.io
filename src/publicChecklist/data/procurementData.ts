@@ -1336,11 +1336,19 @@ export const FREQUENT_QUESTIONS = [
 
 export const LEGAL_ACTS_DOWNLOADS = [
   {
+    title: 'सार्वजनिक खरिद ऐन, २०६३',
+    type: 'ऐन',
+    size: 'PDF',
+    date: 'कानूनी स्रोत',
+    href: './sources/procurement_act.pdf',
+    desc: 'खरिद सम्बन्धी कानूनी आधार र मुख्य प्रावधानहरू समेटिएको मूल ऐन।'
+  },
+  {
     title: 'सार्वजनिक खरिद नियमावली, २०६४',
     type: 'नियमावली',
     size: '3.3 MB',
     date: 'कानूनी स्रोत',
-    href: '/sources/procurement_rules.pdf',
+    href: './sources/procurement_rules.pdf',
     desc: 'खरिद सीमा, प्रक्रिया र स्वीकृति सम्बन्धी नियमहरूको मूल पाठ।'
   }
 ];

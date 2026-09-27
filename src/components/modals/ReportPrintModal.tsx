@@ -114,7 +114,7 @@ export const ReportPrintModal: React.FC<ReportPrintModalProps> = ({
               {/* Official Government Memo Header */}
               <div className="relative text-center space-y-1 pb-4 border-b-2 border-red-800">
                 <img
-                  src="/emblem.webp"
+                  src="./emblem.webp"
                   alt="नेपालको निशाना छाप"
                   className="absolute left-0 top-0 w-12 h-12 rounded-full object-contain mb-1"
                 />

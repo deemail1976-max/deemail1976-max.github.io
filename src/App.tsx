@@ -239,7 +239,10 @@ function MainApp() {
 }
 
 export default function App() {
-  if (window.location.pathname.replace(/\/+$/, '') === '/checklist') {
+  const pathname = window.location.pathname.replace(/\/+$/, '');
+  const isChecklistRoute = pathname === '/checklist' || pathname.endsWith('/checklist');
+
+  if (isChecklistRoute) {
     return <PublicChecklistApp />;
   }
 

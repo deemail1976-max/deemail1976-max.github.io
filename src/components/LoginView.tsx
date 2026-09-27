@@ -38,16 +38,16 @@ export const LoginView: React.FC = () => {
       <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl z-10 border border-slate-100">
         <div className="flex flex-col items-center mb-8 text-center space-y-4">
           <img
-            src="/emblem.webp"
+            src="./emblem.webp"
             alt="निशाना छाप"
             className="w-24 h-24"
           />
           <div>
-            <span className="inline-block text-xs font-bold tracking-wider text-red-800 uppercase bg-red-50 px-2 py-0.5 rounded border border-red-200 mb-2">
+            <span className="inline-block text-xs font-bold tracking-wider text-red-800 uppercase px-2 py-0.5 mb-2">
               नेपाल सरकार | राष्ट्रिय सतर्कता केन्द्र
             </span>
             <h1 className="text-xl font-bold text-slate-900 leading-tight">
-              सार्वजनिक खरिद अनुगमन तथा निरीक्षण प्रणाली
+              खरिद स्वमूल्याङ्कन तथा निरीक्षण प्रणाली
             </h1>
             <p className="text-sm text-slate-500 mt-2">
               प्रणालीमा प्रवेश गर्न आफ्नो विवरण भर्नुहोस्
@@ -65,7 +65,7 @@ export const LoginView: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-slate-700 flex items-center space-x-1.5">
-              <span>प्रयोगकर्ता नाम</span>
+              <span>युजरनेम</span>
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -76,7 +76,7 @@ export const LoginView: React.FC = () => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm transition-colors"
-                placeholder="आफ्नो प्रयोगकर्ता नाम राख्नुहोस्"
+                placeholder="आफ्नो युजरनेम राख्नुहोस्"
                 autoComplete="username"
               />
             </div>
