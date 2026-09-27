@@ -31,7 +31,7 @@ export const AuditLogsView: React.FC = () => {
       <div>
         <h3 className="text-md font-bold text-blue-900 flex items-center space-x-2">
           <History className="w-4 h-4 text-slate-700" />
-          <span>प्रणाली अडिट लग (System Audit Trail)</span>
+          <span>अडिट लग (System Audit Trail)</span>
         </h3>
         <p className="text-xs text-slate-500">
           प्रणालीमा गरिएका सम्पूर्ण खरिद दर्ता, चेकलिस्ट मूल्याङ्कन, कैफियत सिर्जना तथा प्रमाणीकरणको सुरक्षा अभिलेख

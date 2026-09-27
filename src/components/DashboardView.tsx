@@ -114,7 +114,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
            
           </div> */}
           <h3 className="text-md font-bold text-blue-900 mt-1">
-            खरिद अनुगमन तथा जोखिम विश्लेषण ड्यासबोर्ड
+            खरिद तथा जोखिम विश्लेषण ड्यासबोर्ड
           </h3>
           <p className="text-xs text-slate-600 mt-0.5">
             सार्वजनिक खरिद ऐन, २०६३ तथा नियमावली, २०६४ अनुसार {formatNepaliNumber(kpis.total_checklist_stages)} चरणका{' '}
@@ -233,7 +233,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-              चालु निरीक्षणहरू
+              चालु विश्लेषणहरू
             </span>
             <div className="w-8 h-8 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center">
               <FileCheck2 className="w-4 h-4" />
@@ -322,7 +322,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <span>
                     {hideEmptyStages
                       ? `शून्य कैफियतका ${formatNepaliNumber(zeroStageCount)} चरण देखाउनुहोस्`
-                        : `शून्य कैफियतका ${formatNepaliNumber(zeroStageCount)} चरण लुकाउनुहोस्`}
+                      : `शून्य कैफियतका ${formatNepaliNumber(zeroStageCount)} चरण लुकाउनुहोस्`}
                   </span>
                 </button>
               )}
@@ -357,11 +357,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         </span>
                       )}
                       <span
-                        className={`font-bold px-2 py-0.5 rounded-full text-[11px] ${
-                          findingsCount > 0
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-emerald-100 text-emerald-800'
-                        }`}
+                        className={`font-bold px-2 py-0.5 rounded-full text-[11px] ${findingsCount > 0
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-emerald-100 text-emerald-800'
+                          }`}
                       >
                         {formatNepaliNumber(findingsCount)} कैफियत
                       </span>
@@ -369,13 +368,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </div>
                   <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                     <div
-                      className={`h-2 rounded-full transition-all duration-500 ${
-                        findingsCount > 3
-                          ? 'bg-red-600'
-                          : findingsCount > 0
+                      className={`h-2 rounded-full transition-all duration-500 ${findingsCount > 3
+                        ? 'bg-red-600'
+                        : findingsCount > 0
                           ? 'bg-amber-500'
                           : 'bg-emerald-500'
-                      }`}
+                        }`}
                       style={{ width: `${findingsCount > 0 ? Math.max(pct, 8) : 2}%` }}
                     ></div>
                   </div>
@@ -438,11 +436,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 return (
                   <div
                     key={r.risk_level}
-                    className={`p-3 rounded-lg border text-center ${
-                      isHigh
-                        ? 'border-red-200 bg-red-50/60 text-red-900'
-                        : 'border-slate-200 bg-slate-50 text-slate-800'
-                    }`}
+                    className={`p-3 rounded-lg border text-center ${isHigh
+                      ? 'border-red-200 bg-red-50/60 text-red-900'
+                      : 'border-slate-200 bg-slate-50 text-slate-800'
+                      }`}
                   >
                     <div className="text-[11px] font-medium text-slate-500">
                       {r.risk_level} जोखिम
