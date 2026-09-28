@@ -572,7 +572,117 @@ export const api = {
   },
 
   async getInspectionReport(inspectionId: number): Promise<any> {
-    return { error: 'Report generation not supported in frontend-only mode yet.' };
+    try {
+      const [{ data: inspectionData, error: inspectionError }, { data: findingsData }, { data: actionsData }, { data: checklistItems }, { data: resultRows }] = await Promise.all([
+        supabase.from('inspections').select('*').eq('id', inspectionId).maybeSingle(),
+        supabase.from('findings').select('*').eq('inspection_id', inspectionId).order('id', { ascending: true }),
+        supabase.from('corrective_actions').select('*').eq('inspection_id', inspectionId).order('id', { ascending: true }),
+        supabase.from('checklist_items').select('*').eq('is_active', true),
+        supabase.from('inspection_checklist_results').select('*').eq('inspection_id', inspectionId),
+      ]);
+
+      if (inspectionError || !inspectionData) {
+        throw new Error(inspectionError?.message || 'Inspection not found');
+      }
+
+      const { data: procurementData } = await supabase
+        .from('procurements')
+        .select('*, offices(name), ministries(name_ne), provinces(name_ne), districts(name_ne), municipalities(name_ne), fiscal_years(name)')
+        .eq('id', inspectionData.procurement_id)
+        .maybeSingle();
+
+      const leadInspectorId = inspectionData.lead_inspector_id ?? null;
+      const verifiedById = inspectionData.verified_by ?? null;
+
+      const leadInspector = leadInspectorId
+        ? await supabase
+            .from('users')
+            .select('full_name')
+            .eq('id', leadInspectorId)
+            .maybeSingle()
+        : { data: null, error: null };
+
+      const verifiedBy = verifiedById
+        ? await supabase
+            .from('users')
+            .select('full_name')
+            .eq('id', verifiedById)
+            .maybeSingle()
+        : { data: null, error: null };
+
+      const leadInspectorData = leadInspector.data;
+      const verifiedByData = verifiedBy.data;
+
+      const resultMap = new Map((resultRows || []).map((row) => [row.checklist_item_id, row]));
+      const complianceCounts = (resultRows || []).reduce((acc, row) => {
+        const status = row.compliance_status || 'जाँच बाँकी';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const totalItems = checklistItems?.length || 0;
+      const compliantCount = complianceCounts['परिपालन'] || 0;
+      const partialCount = complianceCounts['आंशिक परिपालन'] || 0;
+      const nonCompliantCount = complianceCounts['परिपालन नभएको'] || 0;
+      const missingEvidenceCount = complianceCounts['प्रमाण अपुग'] || 0;
+      const highRiskCount = (resultRows || []).filter((row) => ['उच्च', 'अत्यन्त उच्च'].includes(row.risk_level || '')).length;
+
+      const inspection = {
+        ...inspectionData,
+        procurement_title: procurementData?.title || '',
+        procurement_id_code: procurementData?.procurement_id_code || '',
+        procurement_number: procurementData?.procurement_number || '',
+        procurement_type: procurementData?.procurement_type || '',
+        procurement_method: procurementData?.procurement_method || '',
+        estimated_cost: procurementData?.estimated_cost || 0,
+        contract_amount: procurementData?.contract_amount || 0,
+        contractor_name: procurementData?.contractor_name || '',
+        office_id: procurementData?.office_id || inspectionData.office_id,
+        office_name: procurementData?.offices?.name || inspectionData.office_name || '',
+        ministry_name: procurementData?.ministries?.name_ne || '',
+        province_name: procurementData?.provinces?.name_ne || '',
+        district_name: procurementData?.districts?.name_ne || '',
+        municipality_name: procurementData?.municipalities?.name_ne || '',
+        fiscal_year_name: procurementData?.fiscal_years?.name || '',
+        lead_inspector_name: leadInspectorData?.full_name || inspectionData.lead_inspector_name || '',
+        verified_by_name: verifiedByData?.full_name || inspectionData.verified_by_name || '',
+        completion_percentage: inspectionData.completion_percentage || 0,
+        risk_score: inspectionData.risk_score || 0,
+        inspection_team: inspectionData.inspection_team || leadInspectorData?.full_name || '',
+      };
+
+      return {
+        inspection,
+        stats: {
+          total_items: totalItems,
+          compliant_count: compliantCount,
+          partial_count: partialCount,
+          non_compliant_count: nonCompliantCount,
+          missing_evidence_count: missingEvidenceCount,
+          high_risk_count: highRiskCount,
+          total_financial_impact: (resultRows || []).reduce((sum, row) => sum + (Number(row.financial_impact) || 0), 0),
+        },
+        findings: findingsData || [],
+        corrective_actions: actionsData || [],
+        result_map: resultMap,
+      };
+    } catch (error: any) {
+      return {
+        error: error?.message || 'प्रतिवेदन तयार गर्न सकिएन।',
+        inspection: null,
+        stats: {
+          total_items: 0,
+          compliant_count: 0,
+          partial_count: 0,
+          non_compliant_count: 0,
+          missing_evidence_count: 0,
+          high_risk_count: 0,
+          total_financial_impact: 0,
+        },
+        findings: [],
+        corrective_actions: [],
+      };
+    }
   },
 
   async getAuditLogs(params?: { action?: string; entity_type?: string }): Promise<AuditLog[]> {
