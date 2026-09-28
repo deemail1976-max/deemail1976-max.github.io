@@ -263,19 +263,69 @@ export const api = {
 
   async getInspectionChecklist(id: number, stage?: number): Promise<InspectionChecklistResult[]> {
     const stageQuery = stage ? `?stage=${encodeURIComponent(stage)}` : '';
-    const response = await fetch(`/api/inspections/${id}/checklist${stageQuery}`);
-    if (!response.ok) {
-      const error = await response.json().catch(() => null);
-      throw new Error(error?.error || 'चेकलिस्ट विवरण लोड गर्न सकिएन।');
-    }
 
-    const items = await response.json() as InspectionChecklistResult[];
-    return items.map((item) => ({
-      ...item,
-      compliance_status: item.compliance_status || 'जाँच बाँकी',
-      risk_level: item.risk_level || item.default_risk_level,
-      financial_impact: item.financial_impact || 0,
-    }));
+    try {
+      const response = await fetch(`/api/inspections/${id}/checklist${stageQuery}`);
+      if (!response.ok) {
+        throw new Error('API endpoint unavailable');
+      }
+
+      const items = await response.json() as InspectionChecklistResult[];
+      return items.map((item) => ({
+        ...item,
+        compliance_status: item.compliance_status || 'जाँच बाँकी',
+        risk_level: item.risk_level || item.default_risk_level,
+        financial_impact: item.financial_impact || 0,
+      }));
+    } catch {
+      const { data: checklistData, error: checklistError } = await supabase
+        .from('checklist_items')
+        .select('*, checklist_stages(title_ne)')
+        .eq('is_active', true)
+        .order('stage_number', { ascending: true })
+        .order('sort_order', { ascending: true });
+
+      if (checklistError) throw new Error(checklistError.message || 'चेकलिस्ट विवरण लोड गर्न सकिएन।');
+
+      const { data: resultData, error: resultError } = await supabase
+        .from('inspection_checklist_results')
+        .select('*')
+        .eq('inspection_id', id);
+
+      if (resultError) throw new Error(resultError.message || 'चेकलिस्ट विवरण लोड गर्न सकिएन।');
+
+      const resultMap = new Map((resultData || []).map((result) => [result.checklist_item_id, result]));
+
+      const stageFiltered = (checklistData || []).filter((item) => {
+        if (stage === undefined || stage === null) return true;
+        return Number(item.stage_number) === Number(stage);
+      });
+
+      return stageFiltered.map((item) => {
+        const result = resultMap.get(item.id);
+        return {
+          checklist_item_id: item.id,
+          checklist_code: item.checklist_code,
+          stage_id: item.stage_id,
+          stage_number: item.stage_number,
+          inspection_area: item.inspection_area,
+          legal_reference: item.legal_reference,
+          required_documents: item.required_documents,
+          inspection_question: item.inspection_question,
+          possible_irregularity: item.possible_irregularity,
+          default_risk_level: item.default_risk_level,
+          sort_order: item.sort_order,
+          stage_title_ne: item.checklist_stages?.title_ne || '',
+          result_id: result?.id,
+          compliance_status: result?.compliance_status || 'जाँच बाँकी',
+          risk_level: result?.risk_level || item.default_risk_level,
+          evidence_reference: result?.evidence_reference,
+          observation: result?.observation,
+          financial_impact: result?.financial_impact || 0,
+          inspector_comment: result?.inspector_comment,
+        } as InspectionChecklistResult;
+      });
+    }
   },
 
   async saveInspectionChecklistItem(inspectionId: number, payload: any): Promise<any> {
