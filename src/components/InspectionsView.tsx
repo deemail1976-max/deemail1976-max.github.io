@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Inspection, ChecklistStage, InspectionChecklistResult } from '../types';
+import { Inspection, ChecklistStage, InspectionChecklistResult, Procurement } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from './Toast';
@@ -54,6 +54,7 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({
   const { currentUser, canVerify, canEditInspection } = useAuth();
   const { showToast } = useToast();
   const [inspections, setInspections] = useState<Inspection[]>([]);
+  const [procurements, setProcurements] = useState<Procurement[]>([]);
   const [stages, setStages] = useState<ChecklistStage[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -86,18 +87,24 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({
   const loadData = async () => {
     try {
       setLoading(true);
-      const [inspRes, stageRes] = await Promise.all([
+      const [inspRes, stageRes, procurementRes] = await Promise.all([
         api.getInspections(),
         api.getStages(),
+        api.getProcurements(),
       ]);
       setInspections(inspRes);
       setStages(stageRes);
+      setProcurements(procurementRes);
 
-      // If initial procurement was passed, pick or create inspection
       if (initialProcurementId) {
-        const found = inspRes.find((i) => i.procurement_id === initialProcurementId);
+        const found = inspRes
+          .filter((inspection) => inspection.procurement_id === initialProcurementId)
+          .sort((a, b) => b.id - a.id)[0];
         if (found) {
-          openInspectionDetail(found.id);
+          await openInspectionDetail(found.id);
+        } else {
+          const procurement = procurementRes.find((item) => item.id === initialProcurementId);
+          if (procurement) await startProcurementAnalysis(procurement);
         }
       }
     } catch (err: any) {
@@ -123,6 +130,27 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({
       console.error('Failed to load inspection detail:', err);
       showToast('error', 'निरीक्षण विवरण लोड हुन सकेन', err?.message || 'पुनः प्रयास गर्नुहोस्।');
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const startProcurementAnalysis = async (procurement: Procurement) => {
+    if (!canEditInspection) {
+      showToast('error', 'विश्लेषण सुरु गर्न अनुमति छैन', 'निरीक्षण सुरु गर्ने अधिकार भएको प्रयोगकर्ताबाट प्रयास गर्नुहोस्।');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const inspection = await api.createInspection({
+        procurement_id: procurement.id,
+        inspection_date: new Date().toISOString().slice(0, 10),
+      });
+      setInspections((previous) => [inspection, ...previous]);
+      await openInspectionDetail(inspection.id);
+    } catch (err: any) {
+      console.error('Failed to start procurement analysis:', err);
+      showToast('error', 'विश्लेषण सुरु हुन सकेन', err?.message || 'पुनः प्रयास गर्नुहोस्।');
       setLoading(false);
     }
   };
@@ -254,13 +282,34 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({
     jumpToItem(firstPendingItem.checklist_item_id, firstPendingItem.stage_number);
   };
 
-  const filteredInspections = inspections.filter((insp) => {
+  const procurementAnalysisRows = procurements.map((procurement) => {
+    const inspection = inspections
+      .filter((item) => item.procurement_id === procurement.id)
+      .sort((a, b) => b.id - a.id)[0];
+
+    return {
+      procurement,
+      inspection,
+      inspection_code: inspection?.inspection_code || '',
+      status: inspection?.status || '',
+      procurement_title: inspection?.procurement_title || procurement.title,
+      procurement_id_code: inspection?.procurement_id_code || procurement.procurement_id_code,
+      office_name: inspection?.office_name || procurement.office_name,
+      contractor_name: inspection?.contractor_name || procurement.contractor_name,
+      contract_amount: inspection?.contract_amount ?? procurement.contract_amount,
+      findings_count: inspection?.findings_count || 0,
+      completion_percentage: inspection?.completion_percentage || 0,
+    };
+  });
+
+  const filteredInspections = procurementAnalysisRows.filter((insp) => {
     const q = listSearch.trim().toLowerCase();
     const matchesSearch =
       !q ||
       [insp.inspection_code, insp.procurement_title, insp.office_name, insp.procurement_id_code]
         .some((v) => String(v || '').toLowerCase().includes(q));
-    const matchesStatus = listStatusFilter === 'all' || insp.status === listStatusFilter;
+    const matchesStatus = listStatusFilter === 'all' ||
+      (listStatusFilter === 'not_started' ? !insp.inspection : insp.status === listStatusFilter);
     return matchesSearch && matchesStatus;
   });
 
@@ -298,11 +347,10 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({
                   खरिद: {activeInspection.procurement_id_code}
                 </span>
                 <span
-                  className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                    isVerified
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-blue-100 text-blue-800'
-                  }`}
+                  className={`text-xs font-bold px-2 py-0.5 rounded-full ${isVerified
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-blue-100 text-blue-800'
+                    }`}
                 >
                   {activeInspection.status}
                 </span>
@@ -352,7 +400,7 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({
             <div className="font-bold text-slate-100 mt-0.5">{activeInspection.office_name}</div>
           </div>
           <div>
-            <span className="text-slate-400">निरीक्षक टोली:</span>
+            <span className="text-slate-400">निरीक्षण टोली:</span>
             <div className="font-semibold text-slate-100 mt-0.5 truncate">
               {activeInspection.inspection_team || activeInspection.lead_inspector_name}
             </div>
@@ -405,20 +453,18 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({
                     stageBtnRefs.current[st.stage_number] = el;
                   }}
                   onClick={() => setSelectedStage(st.stage_number)}
-                  className={`px-3 py-2 rounded-lg text-left transition flex items-center space-x-2 ${
-                    isActive
-                      ? 'bg-blue-700 text-white font-bold shadow-xs'
-                      : 'hover:bg-slate-100 text-slate-700'
-                  }`}
+                  className={`px-3 py-2 rounded-lg text-left transition flex items-center space-x-2 ${isActive
+                    ? 'bg-blue-700 text-white font-bold shadow-xs'
+                    : 'hover:bg-slate-100 text-slate-700'
+                    }`}
                 >
                   <span
-                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                      isActive
-                        ? 'bg-white text-blue-800'
-                        : isStageDone
+                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${isActive
+                      ? 'bg-white text-blue-800'
+                      : isStageDone
                         ? 'bg-emerald-100 text-emerald-800'
                         : 'bg-slate-200 text-slate-700'
-                    }`}
+                      }`}
                   >
                     {formatNepaliNumber(st.stage_number)}
                   </span>
@@ -427,18 +473,16 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({
                       {st.title_ne}
                     </div>
                     <div
-                      className={`text-[10px] font-normal flex items-center space-x-1 ${
-                        isActive ? 'text-blue-100' : 'text-slate-500'
-                      }`}
+                      className={`text-[10px] font-normal flex items-center space-x-1 ${isActive ? 'text-blue-100' : 'text-slate-500'
+                        }`}
                     >
                       <span>
                         {formatNepaliNumber(checkedCount)}/{formatNepaliNumber(totalCount)} सम्पन्न
                       </span>
                       {stageIssues > 0 && (
                         <span
-                          className={`font-bold ${
-                            isActive ? 'text-red-200' : 'text-red-600'
-                          }`}
+                          className={`font-bold ${isActive ? 'text-red-200' : 'text-red-600'
+                            }`}
                           title={`${stageIssues} वटा बुँदामा समस्या भेटिएको`}
                         >
                           • {formatNepaliNumber(stageIssues)} समस्या
@@ -510,11 +554,10 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({
                 <button
                   key={f.key}
                   onClick={() => setStageFilter(f.key)}
-                  className={`px-2.5 py-1 rounded-full border font-semibold transition ${
-                    stageFilter === f.key
-                      ? 'bg-blue-700 text-white border-blue-700'
-                      : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
-                  }`}
+                  className={`px-2.5 py-1 rounded-full border font-semibold transition ${stageFilter === f.key
+                    ? 'bg-blue-700 text-white border-blue-700'
+                    : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+                    }`}
                 >
                   {f.label} ({formatNepaliNumber(f.count)})
                 </button>
@@ -669,7 +712,7 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({
                   <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                       <label className="font-bold text-slate-700 block mb-1">
-                        प्रमाण कागजात संकेत / मिसिल पाना नं. (Evidence Reference):
+                        प्रमाण कागजात संकेत / फाइल पाना नं. (Evidence Reference):
                       </label>
                       <input
                         type="text"
@@ -701,7 +744,7 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({
                         className="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-semibold text-xs border border-slate-300 transition"
                       >
                         <Upload className="w-3.5 h-3.5 text-blue-700" />
-                        <span>प्रमाण फाइल अपलोड ({formatNepaliNumber(item.evidence_count || 0)})</span>
+                        <span> फाइल अपलोड ({formatNepaliNumber(item.evidence_count || 0)})</span>
                       </button>
 
                       {isNonCompliant && (
@@ -722,7 +765,7 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({
                           className="flex items-center space-x-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-xs shadow-xs transition"
                         >
                           <AlertTriangle className="w-3.5 h-3.5" />
-                          <span>कैफियतमा दर्ता गर्नुहोस्</span>
+                          <span>कैफियत दर्ता गर्नुहोस्</span>
                         </button>
                       )}
                     </div>
@@ -788,7 +831,7 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({
             <span>खरिद विश्लेषण तथा {formatNepaliNumber(stages.length)}-चरण मूल्याङ्कन</span>
           </h3>
           <p className="text-xs text-slate-500">
-            खरिदको आवश्यकता पहिचानदेखि अन्तिम Procurement Audit सम्मका {totalChecklistItems} वटा वैधानिक बुँदाहरूको प्रत्यक्ष मूल्याङ्कन
+            खरिदको आवश्यकता पहिचानदेखि अन्तिम Procurement Audit सम्मका {totalChecklistItems} वटा बुँदाहरूको मूल्याङ्कन
           </p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
@@ -808,6 +851,7 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({
             className="py-1.5 px-2.5 text-xs border border-slate-300 rounded-lg font-medium focus:ring-2 focus:ring-blue-600 bg-white"
           >
             <option value="all">सबै स्थिति</option>
+            <option value="not_started">विश्लेषण बाँकी</option>
             <option value="Draft">Draft</option>
             <option value="In Progress">In Progress</option>
             <option value="Submitted">Submitted</option>
@@ -821,34 +865,35 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({
 
       {filteredInspections.length === 0 && (
         <div className="bg-white rounded-xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500">
-          खोज वा फिल्टरसँग मिल्ने कुनै निरीक्षण भेटिएन।
+          खोज वा फिल्टरसँग मिल्ने कुनै खरिद आयोजना भेटिएन।
         </div>
       )}
 
       {/* Inspections Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredInspections.map((insp) => {
-          const isVerified = insp.status === 'Verified';
+          const isVerified = insp.inspection?.status === 'Verified';
           const completionPct = insp.completion_percentage || 0;
 
           return (
             <div
-              key={insp.id}
+              key={insp.procurement.id}
               className="bg-white rounded-xl border border-slate-200 shadow-xs hover:border-blue-400 hover:shadow-md transition flex flex-col justify-between overflow-hidden"
             >
               <div className="p-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-xs font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                    {insp.inspection_code}
+                    {insp.inspection_code || insp.procurement.procurement_id_code}
                   </span>
                   <span
-                    className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                      isVerified
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-blue-100 text-blue-800'
-                    }`}
+                    className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${isVerified
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : insp.inspection
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-amber-100 text-amber-800'
+                      }`}
                   >
-                    {insp.status}
+                    {insp.inspection?.status || 'विश्लेषण बाँकी'}
                   </span>
                 </div>
 
@@ -901,18 +946,21 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({
 
               <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
                 <button
-                  onClick={() => onOpenReportPrint(insp.id)}
-                  className="text-xs text-slate-600 hover:text-slate-900 font-semibold flex items-center space-x-1"
+                  onClick={() => insp.inspection && onOpenReportPrint(insp.inspection.id)}
+                  disabled={!insp.inspection}
+                  className="text-xs text-slate-600 hover:text-slate-900 font-semibold flex items-center space-x-1 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <FileText className="w-3.5 h-3.5 text-blue-600" />
                   <span>प्रतिवेदन</span>
                 </button>
 
                 <button
-                  onClick={() => openInspectionDetail(insp.id)}
+                  onClick={() => insp.inspection
+                    ? openInspectionDetail(insp.inspection.id)
+                    : startProcurementAnalysis(insp.procurement)}
                   className="px-4 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center space-x-1"
                 >
-                  <span>{formatNepaliNumber(stages.length)}-चरण मूल्याङ्कन खोल्नुहोस्</span>
+                  <span>{insp.inspection ? `${formatNepaliNumber(stages.length)}-चरण मूल्याङ्कन खोल्नुहोस्` : 'विश्लेषण सुरु गर्नुहोस्'}</span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>

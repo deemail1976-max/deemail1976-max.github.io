@@ -68,10 +68,10 @@ export const MasterChecklistView: React.FC = () => {
     const matchesSearch = !q
       ? true
       : item.checklist_code.toLowerCase().includes(q) ||
-        item.inspection_area.toLowerCase().includes(q) ||
-        item.inspection_question.toLowerCase().includes(q) ||
-        (item.legal_reference || '').toLowerCase().includes(q) ||
-        (item.required_documents || '').toLowerCase().includes(q);
+      item.inspection_area.toLowerCase().includes(q) ||
+      item.inspection_question.toLowerCase().includes(q) ||
+      (item.legal_reference || '').toLowerCase().includes(q) ||
+      (item.required_documents || '').toLowerCase().includes(q);
     return matchesStage && matchesRisk && matchesSearch;
   });
 
@@ -191,7 +191,7 @@ export const MasterChecklistView: React.FC = () => {
           <span>सार्वजनिक खरिद चेकलिस्ट</span>
         </h3>
         <p className="text-xs text-slate-500">
-          सार्वजनिक खरिद ऐन, २०६३ तथा सार्वजनिक खरिद नियमावली, २०६४ सन्दर्भका{' '}
+          सार्वजनिक खरिद ऐन, २०६३ तथा सार्वजनिक खरिद नियमावली, २०६४ बमोजिमका{' '}
           {loading
             ? '…'
             : `${formatNepaliNumber(stages.length)}-चरणका ${formatNepaliNumber(items.length)} वटा checklist सूचकहरू`}
@@ -212,7 +212,7 @@ export const MasterChecklistView: React.FC = () => {
           {formatNepaliNumber(filteredItems.length)} बुँदा
         </p>
         <p className="text-[11px] text-slate-500 mt-1">
-          राष्ट्रिय सतर्कता केन्द्र (NVC) | मिति: {new Date().toLocaleDateString('ne-NP')}
+          राष्ट्रिय सतर्कता केन्द्र | मिति: {new Date().toLocaleDateString('ne-NP')}
         </p>
         <p className="text-[10px] text-slate-600 mt-1">{SOURCE_VERSION_NOTICE}</p>
       </div>
@@ -362,11 +362,10 @@ export const MasterChecklistView: React.FC = () => {
                       ? 'फिल्टर सक्रिय हुँदा सबै बुँदा खुला रहन्छन्'
                       : 'चरण खोल्नुहोस् / खुम्च्याउनुहोस्'
                   }
-                  className={`no-print shrink-0 flex items-center space-x-1 text-[11px] font-semibold transition ${
-                    filtersActive
-                      ? 'text-slate-500 cursor-not-allowed'
-                      : 'text-slate-300 hover:text-white'
-                  }`}
+                  className={`no-print shrink-0 flex items-center space-x-1 text-[11px] font-semibold transition ${filtersActive
+                    ? 'text-slate-500 cursor-not-allowed'
+                    : 'text-slate-300 hover:text-white'
+                    }`}
                 >
                   {isStageExpanded(group.stageNumber) ? (
                     <>
@@ -403,10 +402,9 @@ export const MasterChecklistView: React.FC = () => {
                         <div className="flex items-center space-x-2 shrink-0">
                           <span className="text-slate-500">पूर्वनिर्धारित जोखिम:</span>
                           <span
-                            className={`font-bold px-2 py-0.5 rounded-full border ${
-                              RISK_BADGE[item.default_risk_level] ||
+                            className={`font-bold px-2 py-0.5 rounded-full border ${RISK_BADGE[item.default_risk_level] ||
                               'bg-slate-100 text-slate-800 border-slate-200'
-                            }`}
+                              }`}
                           >
                             {item.default_risk_level}
                           </span>

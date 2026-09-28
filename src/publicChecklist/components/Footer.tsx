@@ -21,7 +21,7 @@ export const Footer: React.FC<FooterProps> = ({ language }) => {
               </h4>
             </div>
             <p className="text-slate-400 text-xs leading-relaxed">
-              प्रधानमन्त्री तथा मन्त्रिपरिषद्को कार्यालय मातहत रही भ्रष्टाचार निवारण ऐन, २०५९ बमोजिम सबै सार्वजनिक निकायहरूमा सुशासन प्रवर्द्धन, प्राविधिक परीक्षण, खरिद अनुगमन तथा निगरानी गर्ने आधिकारिक निकाय।
+              सम्माननीय प्रधानमन्त्रीको प्रत्यक्ष रेखदेख र नियन्त्रणमा रही भ्रष्टाचार निवारण ऐन, २०५९ बमोजिम सुशासन प्रवर्द्धन, प्राविधिक परीक्षण, अनुगमन तथा निगरानी गर्ने निकाय।
             </p>
             <div className="text-[11px] text-amber-300 font-semibold pt-1">
               "भ्रष्टाचारमुक्त समाज, सुशासनयुक्त सार्वजनिक प्रशासन"
@@ -69,7 +69,7 @@ export const Footer: React.FC<FooterProps> = ({ language }) => {
               </li>
               <li>
                 <a
-                  href="https://oagnep.gov.np"
+                  href="https://oag.gov.np"
                   target="_blank"
                   rel="noreferrer"
                   className="hover:text-amber-300 transition flex items-center gap-1.5"
@@ -124,11 +124,11 @@ export const Footer: React.FC<FooterProps> = ({ language }) => {
             <div className="space-y-2 text-slate-400">
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                <span>सिंहदरबार, काठमाडौं, नेपाल</span>
+                <span>सिंहदरबार, काठमाडौं</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>+९७७-१-४२००४०० / ४२००४०१</span>
+                <span>+९७७-१-४२००३४५</span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-blue-400 shrink-0" />
@@ -136,7 +136,7 @@ export const Footer: React.FC<FooterProps> = ({ language }) => {
               </div>
               <div className="p-2.5 rounded bg-slate-800 border border-slate-700 mt-2">
                 <div className="text-[11px] text-amber-300 font-bold">सतर्कता हटलाइन (टोल फ्री):</div>
-                <div className="text-white font-mono font-bold text-sm">१०७ (शुल्क नलाग्ने)</div>
+                <div className="text-white font-mono font-bold text-sm">१००८ (शुल्क नलाग्ने)</div>
               </div>
             </div>
           </div>
@@ -147,11 +147,11 @@ export const Footer: React.FC<FooterProps> = ({ language }) => {
       <div className="bg-[#111827] py-4 px-4 sm:px-8 border-t border-slate-800 text-[11px] text-slate-400">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           <div>
-            © सर्वाधिकार सुरक्षित २०८२ (2026), नेपाल सरकार राष्ट्रिय सतर्कता केन्द्र।
+            © सर्वाधिकार सुरक्षित २०८३, राष्ट्रिय सतर्कता केन्द्र।
           </div>
           <div className="flex items-center gap-3">
             <ShieldCheck className="w-3.5 h-3.5 text-[#1b64b5]" />
-            <span>सबै सार्वजनिक निकायहरूका लागि खरिद अनुपालन प्रणाली</span>
+            <span>सार्वजनिक निकायहरूका लागि खरिद विधि परिपालना सहयाेगी</span>
           </div>
         </div>
       </div>

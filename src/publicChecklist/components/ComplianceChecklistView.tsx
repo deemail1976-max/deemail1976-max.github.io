@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  CheckCircle, 
-  HelpCircle, 
-  Printer, 
-  RefreshCw, 
-  ShieldCheck, 
-  AlertTriangle, 
+import {
+  CheckCircle,
+  HelpCircle,
+  Printer,
+  RefreshCw,
+  ShieldCheck,
+  AlertTriangle,
   Filter,
   Building
 } from 'lucide-react';
@@ -27,18 +27,18 @@ export const ComplianceChecklistView: React.FC<ComplianceChecklistViewProps> = (
 }) => {
   const [selectedStage, setSelectedStage] = useState<number | 'all'>(initialStageFilter || 'all');
   const [filterMandatoryOnly, setFilterMandatoryOnly] = useState(false);
-  
+
   const [statusMap, setStatusMap] = useState<Record<string, ChecklistStatus>>({});
   const [notesMap, setNotesMap] = useState<Record<string, string>>({});
 
   // Audit Info for print report
   const [reportMeta, setReportMeta] = useState({
-    officeName: 'सडक डिभिजन कार्यालय / स्थानीय तह / आयोजना',
+    officeName: 'कार्यालय / स्थानीय तह / आयोजना',
     projectName: 'प्रशासनिक भवन तथा पूर्वाधार निर्माण कार्य',
-    contractId: 'NVC-NCB-W-2082/83-04',
-    fiscalYear: '२०८२/८३',
-    procurementOfficer: 'रामप्रसाद शर्मा (खरिद अधिकृत)',
-    headOfEntity: 'ई. दिनेश श्रेष्ठ (कार्यालय प्रमुख)'
+    contractId: 'NVC-NCB-W-2083/84-01',
+    fiscalYear: '२०८३/८४',
+    procurementOfficer: 'उमेश कुमार मेहता (खरिद अधिकृत)',
+    headOfEntity: 'शिवहरी न्यौपाने (आर्थिक प्रशासन प्रमुख)'
   });
 
   const handleToggleStatus = (id: string, status: ChecklistStatus) => {
@@ -76,12 +76,12 @@ export const ComplianceChecklistView: React.FC<ComplianceChecklistViewProps> = (
   const assessmentStatus = totalMandatory === 0
     ? { label: 'लागू हुने अनिवार्य बुँदा चयन/जाँच बाँकी', color: 'text-slate-700 bg-slate-100 border-slate-300' }
     : failedMandatory > 0
-    ? { label: `${failedMandatory} अनिवार्य बुँदामा पालना नभएको`, color: 'text-red-800 bg-red-50 border-red-300' }
-    : partialMandatory > 0
-    ? { label: `${partialMandatory} अनिवार्य बुँदामा आंशिक पालना`, color: 'text-amber-800 bg-amber-50 border-amber-300' }
-    : reviewedMandatory < mandatoryItems.length
-    ? { label: 'स्व-मूल्याङ्कन जारी', color: 'text-blue-800 bg-blue-50 border-blue-300' }
-    : { label: 'लागू अनिवार्य बुँदामा Pass', color: 'text-emerald-800 bg-emerald-50 border-emerald-300' };
+      ? { label: `${failedMandatory} अनिवार्य बुँदामा पालना नभएको`, color: 'text-red-800 bg-red-50 border-red-300' }
+      : partialMandatory > 0
+        ? { label: `${partialMandatory} अनिवार्य बुँदामा आंशिक पालना`, color: 'text-amber-800 bg-amber-50 border-amber-300' }
+        : reviewedMandatory < mandatoryItems.length
+          ? { label: 'स्व-मूल्याङ्कन जारी', color: 'text-blue-800 bg-blue-50 border-blue-300' }
+          : { label: 'लागू अनिवार्य बुँदामा Pass', color: 'text-emerald-800 bg-emerald-50 border-emerald-300' };
 
   return (
     <div className="space-y-3">
@@ -117,7 +117,7 @@ export const ComplianceChecklistView: React.FC<ComplianceChecklistViewProps> = (
               {compliancePercent}%
             </div>
             <div className="text-[11px] text-slate-500 font-semibold">
-              Pass / लागू अनिवार्य ({verifiedMandatory}/{totalMandatory})
+              ({verifiedMandatory}/{totalMandatory})
             </div>
           </div>
           <div className="border-l pl-4 border-slate-200">
@@ -125,7 +125,7 @@ export const ComplianceChecklistView: React.FC<ComplianceChecklistViewProps> = (
               {assessmentStatus.label}
             </span>
             <div className="text-[11px] text-slate-500 mt-1">
-              N/A हटाई Pass / लागू अनिवार्य बुँदा
+
             </div>
           </div>
         </div>
@@ -165,7 +165,7 @@ export const ComplianceChecklistView: React.FC<ComplianceChecklistViewProps> = (
           </div>
 
           <div>
-            <label className="text-slate-500 font-medium block mb-1">ठेक्का/बोलपत्र संकेत नं (IFB No):</label>
+            <label className="text-slate-500 font-medium block mb-1">ठेक्का/बोलपत्र संकेत नं:</label>
             <input
               type="text"
               value={reportMeta.contractId}
@@ -243,17 +243,16 @@ export const ComplianceChecklistView: React.FC<ComplianceChecklistViewProps> = (
           return (
             <div
               key={item.id}
-              className={`p-4 rounded-lg border transition ${
-                isVerified
-                  ? 'border-emerald-300 bg-emerald-50/40'
-                  : isPartial
+              className={`p-4 rounded-lg border transition ${isVerified
+                ? 'border-emerald-300 bg-emerald-50/40'
+                : isPartial
                   ? 'border-amber-300 bg-amber-50/50'
                   : isFailed
-                  ? 'border-red-300 bg-red-50/50'
-                  : isNA
-                  ? 'border-slate-300 bg-slate-100/60 opacity-75'
-                  : 'border-slate-200 bg-white hover:border-blue-300'
-              }`}
+                    ? 'border-red-300 bg-red-50/50'
+                    : isNA
+                      ? 'border-slate-300 bg-slate-100/60 opacity-75'
+                      : 'border-slate-200 bg-white hover:border-blue-300'
+                }`}
             >
               <div className="flex flex-col md:flex-row items-start justify-between gap-4">
                 {/* Left: Item Detail */}
@@ -296,11 +295,10 @@ export const ComplianceChecklistView: React.FC<ComplianceChecklistViewProps> = (
                 <div className="flex flex-wrap items-center justify-end gap-1.5 shrink-0 no-print self-end md:self-center">
                   <button
                     onClick={() => handleToggleStatus(item.id, 'verified')}
-                    className={`flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold transition cursor-pointer border ${
-                      isVerified
-                        ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
-                        : 'bg-white hover:bg-emerald-50 text-emerald-800 border-emerald-300'
-                    }`}
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold transition cursor-pointer border ${isVerified
+                      ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
+                      : 'bg-white hover:bg-emerald-50 text-emerald-800 border-emerald-300'
+                      }`}
                   >
                     <CheckCircle className="w-3.5 h-3.5" />
                     <span>पालना भएको (Pass)</span>
@@ -309,11 +307,10 @@ export const ComplianceChecklistView: React.FC<ComplianceChecklistViewProps> = (
                   <button
                     onClick={() => handleToggleStatus(item.id, 'partial')}
                     aria-pressed={isPartial}
-                    className={`px-2.5 py-1.5 rounded text-xs font-medium transition cursor-pointer border ${
-                      isPartial
-                        ? 'bg-amber-600 text-white border-amber-700'
-                        : 'bg-white hover:bg-amber-50 text-amber-800 border-amber-300'
-                    }`}
+                    className={`px-2.5 py-1.5 rounded text-xs font-medium transition cursor-pointer border ${isPartial
+                      ? 'bg-amber-600 text-white border-amber-700'
+                      : 'bg-white hover:bg-amber-50 text-amber-800 border-amber-300'
+                      }`}
                   >
                     आंशिक (Partial)
                   </button>
@@ -321,11 +318,10 @@ export const ComplianceChecklistView: React.FC<ComplianceChecklistViewProps> = (
                   <button
                     onClick={() => handleToggleStatus(item.id, 'failed')}
                     aria-pressed={isFailed}
-                    className={`px-2.5 py-1.5 rounded text-xs font-medium transition cursor-pointer border ${
-                      isFailed
-                        ? 'bg-red-700 text-white border-red-800'
-                        : 'bg-white hover:bg-red-50 text-red-800 border-red-300'
-                    }`}
+                    className={`px-2.5 py-1.5 rounded text-xs font-medium transition cursor-pointer border ${isFailed
+                      ? 'bg-red-700 text-white border-red-800'
+                      : 'bg-white hover:bg-red-50 text-red-800 border-red-300'
+                      }`}
                   >
                     पालना नभएको (Fail)
                   </button>
@@ -333,11 +329,10 @@ export const ComplianceChecklistView: React.FC<ComplianceChecklistViewProps> = (
                   <button
                     onClick={() => handleToggleStatus(item.id, 'na')}
                     aria-pressed={isNA}
-                    className={`px-2.5 py-1.5 rounded text-xs font-medium transition cursor-pointer border ${
-                      isNA
-                        ? 'bg-slate-700 text-white border-slate-800'
-                        : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-300'
-                    }`}
+                    className={`px-2.5 py-1.5 rounded text-xs font-medium transition cursor-pointer border ${isNA
+                      ? 'bg-slate-700 text-white border-slate-800'
+                      : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-300'
+                      }`}
                   >
                     लागू नहुने (N/A)
                   </button>

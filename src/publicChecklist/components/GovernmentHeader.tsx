@@ -18,9 +18,9 @@ export const GovernmentHeader: React.FC<GovernmentHeaderProps> = ({
   onPrintClick
 }) => {
   const [currentDateTime, setCurrentDateTime] = useState({
-    bsDate: '२०८२ फागुन १५ गते, शुक्रबार',
-    time: '१०:३० बिहान',
-    adDate: 'February 27, 2026'
+    bsDate: '२०८३ असोज ११ गते, आइतबार',
+    time: '६:३२ बिहान',
+    adDate: 'September 27, 2026'
   });
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export const GovernmentHeader: React.FC<GovernmentHeaderProps> = ({
       ];
       const nepaliDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
       const toNep = (n: number) => n.toString().split('').map(d => nepaliDigits[parseInt(d, 10)] || d).join('');
-      
+
       const dayName = nepaliDays[now.getDay()];
       const monthName = nepaliMonths[10];
       const timeStr = `${toNep(now.getHours())}:${toNep(now.getMinutes())}`;
@@ -71,7 +71,7 @@ export const GovernmentHeader: React.FC<GovernmentHeaderProps> = ({
             {/* Toll Free Helpline: NVC 107 & Hello Sarkar 1111 */}
             <div className="hidden sm:flex items-center gap-1.5 text-amber-300 font-semibold bg-blue-900/60 px-2.5 py-0.5 rounded border border-blue-400/30 text-[11px]">
               <PhoneCall className="w-3 h-3 text-amber-300" />
-              <span>सतर्कता टोल फ्री: १०७ | हेलो सरकार: ११११</span>
+              <span>सतर्कता टोल फ्री: १००८ | हेलो सरकार: ११११</span>
             </div>
 
             {/* Font Size Adjuster A- A A+ */}
@@ -133,12 +133,12 @@ export const GovernmentHeader: React.FC<GovernmentHeaderProps> = ({
                 className="w-16 h-16 sm:w-20 sm:h-20 drop-shadow-xs"
                 viewBox="0 0 200 200"
                 fill="none"
-                xmlns="http://www.w3.org/2000/svg"
+                xmlns="/emblem.webp"
                 role="img"
                 aria-label="नेपालको निशान छाप (Emblem of Nepal)"
               >
                 <circle cx="100" cy="100" r="92" fill="#F8FAFC" stroke="#1b64b5" strokeWidth="2.5" />
-                
+
                 {/* Petals Wreath ring */}
                 <g fill="#1b64b5" opacity="0.85">
                   {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg, i) => (
@@ -191,15 +191,15 @@ export const GovernmentHeader: React.FC<GovernmentHeaderProps> = ({
               <span className="text-[#185294] font-bold text-xs sm:text-sm tracking-wide">
                 {language === 'ne' ? 'नेपाल सरकार' : 'Government of Nepal'}
               </span>
-              <span className="text-slate-600 text-[11px] sm:text-xs font-medium">
+              {/* <span className="text-slate-600 text-[11px] sm:text-xs font-medium">
                 {language === 'ne' ? 'प्रधानमन्त्री तथा मन्त्रिपरिषद्को कार्यालय' : 'Office of the Prime Minister and Council of Ministers'}
-              </span>
+              </span> */}
               <h1 className="text-lg sm:text-2xl font-black text-[#1b64b5] leading-tight">
-                {language === 'ne' ? 'नेपाल सरकार राष्ट्रिय सतर्कता केन्द्र' : 'Government of Nepal National Vigilance Centre'}
+                {language === 'ne' ? 'राष्ट्रिय सतर्कता केन्द्र' : 'National Vigilance Centre'}
               </h1>
               <div className="flex flex-wrap items-center gap-1.5 text-[11px] sm:text-xs text-slate-600 font-medium">
                 <span className="text-[#185294] font-semibold">
-                  {language === 'ne' ? 'सबै सार्वजनिक निकायहरूका लागि सार्वजनिक खरिद प्रक्रिया मार्गदर्शन तथा अनुपालन प्रणाली' : 'Public Procurement Procedure Guidance & Compliance System for All Public Entities'}
+                  {language === 'ne' ? 'खरिद विधि परिपालना तथा स्वमूल्यांकन प्रणाली' : 'Public Procurement Procedure Compliance & Self-Assessment System'}
                 </span>
                 <span className="hidden sm:inline text-slate-300">•</span>
                 <span className="hidden sm:inline">सिंहदरबार, काठमाडौं</span>
@@ -232,7 +232,7 @@ export const GovernmentHeader: React.FC<GovernmentHeaderProps> = ({
                 className="w-10 h-13 drop-shadow-xs hover:scale-105 transition-transform"
                 viewBox="0 0 100 130"
                 fill="none"
-                xmlns="http://www.w3.org/2000/svg"
+                xmlns="./nepal.gif"
               >
                 <polygon
                   points="5,5 95,50 42,50 88,118 5,118"

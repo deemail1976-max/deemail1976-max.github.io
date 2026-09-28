@@ -133,7 +133,6 @@ export const ProcurementModal: React.FC<ProcurementModalProps> = ({
         title,
         procurement_number: procurementNumber || `PROC-${Date.now().toString().slice(-6)}`,
         office_id: officeId ? Number(officeId) : undefined,
-        office_name: officeName.trim(),
         ministry_id: ministryId ? Number(ministryId) : undefined,
         province_id: provinceId ? Number(provinceId) : undefined,
         district_id: districts.find((district) => district.name_ne === districtName)?.id,
@@ -151,6 +150,7 @@ export const ProcurementModal: React.FC<ProcurementModalProps> = ({
         contract_completion_date: contractCompletionDate,
         lead_inspector: leadInspector,
         inspection_team: inspectionTeam,
+        office_name: officeName.trim(),
       });
 
       onSuccess();

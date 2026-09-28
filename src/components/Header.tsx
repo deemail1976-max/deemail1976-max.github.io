@@ -31,7 +31,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, activeView }) => {
                 </span> */}
               </div>
               <h1 className="text-base font-bold text-blue-900/90 leading-tight">
-                खरिद विधि परिपालना अनुगमन
+                खरिद विधि परिपालना सहयोगी
               </h1>
             </div>
           </div>

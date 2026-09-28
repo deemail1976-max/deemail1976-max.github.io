@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   FileText, 
   Clock, 
@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { PROCUREMENT_STAGES, PROCUREMENT_SOURCE_NOTE } from '../data/procurementData';
 import { Language } from '../types/procurement';
+import { api } from '../../services/api';
+import type { ChecklistItem, ChecklistStage } from '../../types';
 
 interface ProcurementStagesViewProps {
   language: Language;
@@ -26,7 +28,38 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
   onSelectStage,
   onOpenChecklistForStage,
 }) => {
+  const [databaseStages, setDatabaseStages] = useState<ChecklistStage[]>([]);
+  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
+  const [isLoadingChecklist, setIsLoadingChecklist] = useState(true);
+  const [checklistLoadError, setChecklistLoadError] = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([api.getProcurementStages(), api.getProcurementChecklistItems()])
+      .then(([stages, items]) => {
+        if (!isMounted) return;
+        setDatabaseStages(stages);
+        setChecklistItems(items.filter((item) => item.is_active));
+      })
+      .catch((error) => {
+        console.error('Failed to load procurement stage checklist:', error);
+        if (isMounted) setChecklistLoadError(error instanceof Error ? error.message : 'चेकलिस्ट लोड हुन सकेन।');
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingChecklist(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const stages = databaseStages.length ? databaseStages : PROCUREMENT_STAGES;
+  const activeDatabaseStage = databaseStages.find((stage) => stage.stage_number === selectedStageId);
   const currentStage = PROCUREMENT_STAGES.find((s) => s.id === selectedStageId) || PROCUREMENT_STAGES[0];
+  const activeTitle = activeDatabaseStage?.title_ne || currentStage.title;
+  const activeDescription = activeDatabaseStage?.description || currentStage.shortDesc;
+  const stageItems = checklistItems.filter((item) => item.stage_number === selectedStageId);
 
   const handlePrev = () => {
     if (selectedStageId > 1) {
@@ -35,7 +68,7 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
   };
 
   const handleNext = () => {
-    if (selectedStageId < PROCUREMENT_STAGES.length) {
+    if (selectedStageId < stages.length) {
       onSelectStage(selectedStageId + 1);
     }
   };
@@ -43,11 +76,17 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
   return (
     <div className="space-y-3">
       {/* Top Banner */}
+      {checklistLoadError && (
+        <div role="alert" className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+          {checklistLoadError} कृपया सर्भर जाँच गरी पेज पुनःलोड गर्नुहोस्।
+        </div>
+      )}
+
       <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="bg-[#1b64b5] text-white text-xs font-bold px-2 py-0.5 rounded">
-              {language === 'ne' ? `${PROCUREMENT_STAGES.length} चरणगत प्रक्रिया` : `${PROCUREMENT_STAGES.length}-Phase Process`}
+              {language === 'ne' ? `${stages.length} चरणगत प्रक्रिया` : `${stages.length}-Phase Process`}
             </span>
             <span className="text-xs text-slate-500 font-medium">
               सार्वजनिक खरिद ऐन, २०६३ र नियमावली, २०६४ बमोजिम
@@ -67,7 +106,7 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
         <div className="bg-blue-50 border border-blue-200 px-4 py-2 rounded-lg text-right">
           <div className="text-md text-blue-500 font-semibold">हालको चरण</div>
           <div className="text-lg font-black text-[#1b64b5]">
-            {selectedStageId} / {PROCUREMENT_STAGES.length}
+            {selectedStageId} / {stages.length}
           </div>
         </div>
       </div>
@@ -83,16 +122,18 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
           <div className="absolute top-1/2 left-6 right-6 -translate-y-1/2 h-1 bg-slate-200 -z-0" />
           <div 
             className="absolute top-1/2 left-6 -translate-y-1/2 h-1 bg-[#1b64b5] -z-0 transition-all duration-300"
-            style={{ width: `${((selectedStageId - 1) / (PROCUREMENT_STAGES.length - 1)) * 95}%` }}
+            style={{ width: `${((selectedStageId - 1) / Math.max(stages.length - 1, 1)) * 95}%` }}
           />
 
-          {PROCUREMENT_STAGES.map((stage) => {
-            const isSelected = stage.id === selectedStageId;
-            const isCompleted = stage.id < selectedStageId;
+          {stages.map((stage) => {
+            const stageId = 'stage_number' in stage ? stage.stage_number : stage.id;
+            const stageTitle = 'title_ne' in stage ? stage.title_ne : stage.title;
+            const isSelected = stageId === selectedStageId;
+            const isCompleted = stageId < selectedStageId;
             return (
               <button
-                key={stage.id}
-                onClick={() => onSelectStage(stage.id)}
+                key={stageId}
+                onClick={() => onSelectStage(stageId)}
                 className={`relative z-10 flex flex-col items-center group cursor-pointer transition-transform ${
                   isSelected ? 'scale-110' : 'hover:scale-105'
                 }`}
@@ -106,14 +147,14 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
                       : 'bg-white text-slate-600 border-slate-300 group-hover:border-blue-400'
                   }`}
                 >
-                  {stage.id}
+                  {stageId}
                 </div>
                 <span
                   className={`text-[11px] font-semibold mt-1.5 max-w-[85px] text-center leading-tight truncate ${
                     isSelected ? 'text-[#185294] font-bold' : 'text-slate-600 group-hover:text-slate-900'
                   }`}
                 >
-                  {stage.title.split(' ')[0]} {stage.title.split(' ')[1] || ''}
+                  {stageTitle.split(' ').slice(0, 2).join(' ')}
                 </span>
               </button>
             );
@@ -127,11 +168,11 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
         <div className="bg-linear-to-r from-[#185294] to-[#1b64b5] text-white p-2 sm:p-2">
           <div className="flex flex-wrap items-center justify-between gap-1">
             <span className="bg-amber-400 text-slate-950 text-xs font-black px-1 py-1 rounded shadow-xs uppercase tracking-wide">
-              {currentStage.stageNumber}
+              {activeDatabaseStage ? `चरण ${activeDatabaseStage.stage_number}` : currentStage.stageNumber}
             </span>
             <div className="flex items-center gap-1">
               <button
-                onClick={() => onOpenChecklistForStage(currentStage.id)}
+                onClick={() => onOpenChecklistForStage(selectedStageId)}
                 className="flex items-center gap-1.5 bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-bold transition shadow-xs cursor-pointer border border-blue-300/40"
               >
                 <ShieldCheck className="w-3.5 h-3 text-amber-300" />
@@ -141,14 +182,14 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
           </div>
 
           <h3 className="text-md sm:text-md font-black mt-1">
-            {language === 'ne' ? currentStage.title : currentStage.titleEn}
+            {language === 'ne' ? activeTitle : activeDatabaseStage?.title_en || currentStage.titleEn}
           </h3>
           <p className="text-blue-100 text-sm mt-1 leading-relaxed max-w-3xl">
-            {language === 'ne' ? currentStage.shortDesc : currentStage.shortDescEn}
+            {language === 'ne' ? activeDescription : currentStage.shortDescEn}
           </p>
 
           {/* Quick Legal & Time badges */}
-          <div className="flex flex-wrap items-center gap-3 mt-2 pt-2 border-t border-blue-400/30 text-xs">
+          <div className={`${activeDatabaseStage ? 'hidden' : ''} flex flex-wrap items-center gap-3 mt-2 pt-2 border-t border-blue-400/30 text-xs`}>
             <div className="flex items-center gap-1.5 bg-blue-900/60 px-2.5 py-1 rounded border border-blue-300/30">
               <Scale className="w-4 h-4 text-amber-300 shrink-0" />
               <span><strong>कानूनी आधार:</strong> {currentStage.legalBasis}</span>
@@ -161,7 +202,7 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
         </div>
 
         {/* Content Body Grid */}
-        <div className="p-5 sm:p-7 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50">
+        <div className={`${activeDatabaseStage ? 'hidden' : ''} p-5 sm:p-7 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50`}>
           {/* 1. Key Responsibilities */}
           <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-xs space-y-3">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
@@ -237,6 +278,39 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
           </div>
         </div>
 
+        {activeDatabaseStage && (
+          <div className="space-y-4 bg-slate-50/50 p-4 sm:p-6">
+            <p className="text-sm text-slate-700">{activeDescription}</p>
+            <section className="space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                <h4 className="font-bold text-slate-900 text-sm">यस चरणका जाँच बुँदाहरू</h4>
+                <span className="text-xs text-slate-500">
+                  {isLoadingChecklist ? 'लोड हुँदैछ...' : `${stageItems.length} बुँदा`}
+                </span>
+              </div>
+              {isLoadingChecklist ? (
+                <p className="text-sm text-slate-500">जाँच बुँदाहरू लोड हुँदैछन्...</p>
+              ) : stageItems.length ? (
+                <div className="space-y-2">
+                  {stageItems.map((item) => (
+                    <article key={item.id} className="rounded border border-emerald-200/70 bg-white p-3">
+                      <div className="mb-1 flex flex-wrap items-center gap-2 text-[11px]">
+                        <span className="font-mono font-bold text-emerald-800">{item.checklist_code}</span>
+                        <span className="text-slate-500">{item.inspection_area}</span>
+                        <span className="ml-auto text-slate-500">जोखिम: {item.default_risk_level}</span>
+                      </div>
+                      <p className="text-sm font-medium leading-relaxed text-slate-900">{item.inspection_question}</p>
+                      {item.legal_reference && <p className="mt-1 text-xs text-slate-500">कानूनी आधार: {item.legal_reference}</p>}
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500">यस चरणका लागि सक्रिय जाँच बुँदा भेटिएन।</p>
+              )}
+            </section>
+          </div>
+        )}
+
         {/* Stepper Navigation Controls (Next / Prev) */}
         <div className="bg-slate-100 p-4 border-t border-slate-200 flex items-center justify-between no-print">
           <button
@@ -253,14 +327,14 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
           </button>
 
           <span className="text-xs text-slate-500 font-semibold hidden sm:inline">
-            चरण {selectedStageId} / {PROCUREMENT_STAGES.length}: {currentStage.title.split(' ')[0]}
+            चरण {selectedStageId} / {stages.length}: {activeTitle.split(' ')[0]}
           </span>
 
           <button
             onClick={handleNext}
-            disabled={selectedStageId === PROCUREMENT_STAGES.length}
+            disabled={selectedStageId === stages.length}
             className={`flex items-center gap-1.5 px-4 py-2 rounded text-xs sm:text-sm font-bold transition ${
-              selectedStageId === PROCUREMENT_STAGES.length
+              selectedStageId === stages.length
                 ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 : 'bg-[#1b64b5] hover:bg-[#155294] text-white shadow-xs cursor-pointer'
             }`}

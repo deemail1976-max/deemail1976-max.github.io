@@ -1,13 +1,13 @@
 import React from 'react';
-import { 
-  Layers, 
-  CheckSquare, 
-  Calculator, 
-  BookOpen, 
-  ArrowRight, 
-  ShieldCheck, 
-  Scale, 
-  Building2, 
+import {
+  Layers,
+  CheckSquare,
+  Calculator,
+  BookOpen,
+  ArrowRight,
+  ShieldCheck,
+  Scale,
+  Building2,
   FileCheck2,
   AlertCircle,
   Eye,
@@ -33,7 +33,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
       {/* 1. Official Hero Banner - NVC Blue Tone */}
       <div className="relative overflow-hidden rounded-md bg-linear-to-r from-[#185294] via-[#1b64b5] to-[#2563eb] text-white px-3 py-[0.3rem] sm:px-5 sm:py-[0.5rem] shadow-sm border-b-4 border-amber-400 mb-1.5">
         <div className="relative z-10 max-w-3xl space-y-2">
-         
+
           <p className="text-blue-100 text-xs  leading-relaxed">
             सार्वजनिक खरिदलाई स्वच्छ, मितव्ययी, पारदर्शी र जोखिमरहित बनाउन राष्ट्रिय सतर्कता केन्द्रद्वारा तयार गरिएको सहयोगी सामग्री।
           </p>
@@ -100,7 +100,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
         </div>
       </div> */}
 
-     
+
 
       {/* 4. 4 Core Feature Cards */}
       <div>

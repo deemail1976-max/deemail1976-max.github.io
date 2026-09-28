@@ -185,11 +185,11 @@ export const ProcurementsView: React.FC<ProcurementsViewProps> = ({
               onChange={(e) => setSelectedType(e.target.value)}
               className="w-full py-2 px-3 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-600 bg-slate-50"
             >
-              <option value="">सबै खरिद प्रकार (All Types)</option>
-              <option value="Works">निर्माण कार्य (Works)</option>
-              <option value="Goods">मालसामान (Goods)</option>
-              <option value="Consultancy Services">परामर्श सेवा (Consultancy)</option>
-              <option value="Other Services">अन्य सेवा (Other Services)</option>
+              <option value="">सबै खरिद प्रकार</option>
+              <option value="Works">निर्माण कार्य</option>
+              <option value="Goods">मालसामान</option>
+              <option value="Consultancy Services">परामर्श सेवा </option>
+              <option value="Other Services">अन्य सेवा </option>
             </select>
           </div>
 
@@ -200,11 +200,11 @@ export const ProcurementsView: React.FC<ProcurementsViewProps> = ({
               onChange={(e) => setSelectedMethod(e.target.value)}
               className="w-full py-2 px-3 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-600 bg-slate-50"
             >
-              <option value="">सबै खरिद विधि (All Methods)</option>
-              <option value="Open Competitive Bidding">खुला प्रतिस्पर्धा (Open Bidding)</option>
-              <option value="Sealed Quotation">सिलबन्दी दरभाउपत्र (Sealed Quotation)</option>
-              <option value="Direct Procurement">सोझै खरिद (Direct)</option>
-              <option value="Consumer Committee">उपभोक्ता समिति (Consumer Committee)</option>
+              <option value="">सबै खरिद विधि</option>
+              <option value="Open Competitive Bidding">खुला प्रतिस्पर्धा</option>
+              <option value="Sealed Quotation">सिलबन्दी दरभाउपत्र</option>
+              <option value="Direct Procurement">सोझै खरिद</option>
+              <option value="Consumer Committee">उपभोक्ता समिति </option>
               <option value="Consultancy Selection">परामर्श सेवा छनोट</option>
               <option value="Special Circumstances">विशेष परिस्थिति / आकस्मिक खरिद</option>
             </select>
@@ -327,11 +327,10 @@ export const ProcurementsView: React.FC<ProcurementsViewProps> = ({
                         {hasInspection ? (
                           <div>
                             <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                proc.inspection_status === 'Verified'
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${proc.inspection_status === 'Verified'
                                   ? 'bg-emerald-100 text-emerald-800'
                                   : 'bg-blue-100 text-blue-800'
-                              }`}
+                                }`}
                             >
                               {inspectionStatus}
                             </span>
@@ -478,11 +477,10 @@ export const ProcurementsView: React.FC<ProcurementsViewProps> = ({
                         <div className="flex items-center space-x-1 shrink-0">
                           <button
                             onClick={() => handleDocStatusChange(doc.id, isAvailable ? 'उपलब्ध छैन' : 'उपलब्ध')}
-                            className={`px-2 py-0.5 rounded text-[11px] font-bold transition flex items-center space-x-1 ${
-                              isAvailable
+                            className={`px-2 py-0.5 rounded text-[11px] font-bold transition flex items-center space-x-1 ${isAvailable
                                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                                 : 'bg-red-100 text-red-800 border border-red-300'
-                            }`}
+                              }`}
                           >
                             {isAvailable ? (
                               <>
@@ -520,7 +518,7 @@ export const ProcurementsView: React.FC<ProcurementsViewProps> = ({
                 }}
                 className="px-5 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center space-x-2"
               >
-                <span>स्थलगत निरीक्षण सुरु / जारी राख्नुहोस्</span>
+                <span>निरीक्षण सुरु / जारी राख्नुहोस्</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>

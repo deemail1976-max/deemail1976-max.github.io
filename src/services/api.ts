@@ -1,6 +1,28 @@
 import { supabase } from './supabase';
 import { User, Province, District, Municipality, Ministry, Office, FiscalYear, Procurement, ChecklistStage, ChecklistItem, Inspection, InspectionChecklistResult, Finding, CorrectiveAction, EvidenceFile, AuditLog, DashboardSummary } from '../types';
 
+export function sanitizeProcurementPayload(proc: Partial<Procurement> = {}) {
+  const {
+    office_name,
+    ministry_name,
+    province_name,
+    district_name,
+    municipality_name,
+    fiscal_year_name,
+    ...payload
+  } = proc as Record<string, any>;
+
+  const safePayload: Record<string, any> = { ...payload };
+  delete safePayload.office_name;
+  delete safePayload.ministry_name;
+  delete safePayload.province_name;
+  delete safePayload.district_name;
+  delete safePayload.municipality_name;
+  delete safePayload.fiscal_year_name;
+
+  return safePayload;
+}
+
 export const api = {
   async login(username: string, password: string): Promise<{ token: string; user: User }> {
     // Note: Since we are using standard Postgres without Supabase Auth for users table,
@@ -35,6 +57,18 @@ export const api = {
   async getStages(): Promise<ChecklistStage[]> {
     const { data } = await supabase.from('checklist_stages').select('*').order('sort_order');
     return data as ChecklistStage[] || [];
+  },
+
+  async getProcurementStages(): Promise<ChecklistStage[]> {
+    const response = await fetch('/api/master/stages');
+    if (!response.ok) throw new Error('चरणहरूको विवरण लोड गर्न सकिएन।');
+    return response.json() as Promise<ChecklistStage[]>;
+  },
+
+  async getProcurementChecklistItems(): Promise<ChecklistItem[]> {
+    const response = await fetch('/api/checklists?is_active=true');
+    if (!response.ok) throw new Error('चेकलिस्ट बुँदाहरू लोड गर्न सकिएन।');
+    return response.json() as Promise<ChecklistItem[]>;
   },
 
   async getProvinces(): Promise<Province[]> {
@@ -114,13 +148,45 @@ export const api = {
   },
 
   async createProcurement(proc: Partial<Procurement>): Promise<Procurement> {
-    const { data, error } = await supabase.from('procurements').insert([proc]).select().single();
+    const { office_name, ...rest } = proc as Record<string, any>;
+    const procurementFields = sanitizeProcurementPayload(rest as Partial<Procurement>);
+
+    let officeId = procurementFields.office_id;
+    if (!officeId && office_name?.trim()) {
+      const { data: existingOffice, error: officeLookupError } = await supabase
+        .from('offices')
+        .select('id')
+        .eq('is_active', true)
+        .ilike('name', office_name.trim())
+        .maybeSingle();
+      if (officeLookupError) throw new Error(officeLookupError.message);
+
+      if (existingOffice) {
+        officeId = existingOffice.id;
+      } else {
+        const { data: createdOffice, error: officeCreateError } = await supabase
+          .from('offices')
+          .insert([{ name: office_name.trim(), is_active: true }])
+          .select('id')
+          .single();
+        if (officeCreateError) throw new Error(officeCreateError.message);
+        officeId = createdOffice.id;
+      }
+    }
+
+    const payload = {
+      ...procurementFields,
+      office_id: officeId || null,
+      procurement_id_code: procurementFields.procurement_id_code || `NVC-PROC-${Date.now()}`,
+    };
+    const { data, error } = await supabase.from('procurements').insert([payload]).select().single();
     if (error) throw new Error(error.message);
     return data as Procurement;
   },
 
   async updateProcurement(id: number, proc: Partial<Procurement>): Promise<Procurement> {
-    const { data, error } = await supabase.from('procurements').update(proc).eq('id', id).select().single();
+    const payload = sanitizeProcurementPayload(proc);
+    const { data, error } = await supabase.from('procurements').update(payload).eq('id', id).select().single();
     if (error) throw new Error(error.message);
     return data as Procurement;
   },
@@ -151,7 +217,7 @@ export const api = {
   },
 
   async getInspections(filters?: Record<string, string | number>): Promise<Inspection[]> {
-    let q = supabase.from('inspections').select('*, procurements(title, procurement_id_code)');
+    let q = supabase.from('inspections').select('*, procurements(title, procurement_id_code, office_id, offices(name))');
     if (filters) {
       Object.entries(filters).forEach(([k, v]) => {
         if (v) q = q.eq(k, v);
@@ -161,22 +227,30 @@ export const api = {
     return (data || []).map(d => ({
       ...d,
       procurement_title: d.procurements?.title,
-      procurement_id_code: d.procurements?.procurement_id_code
+      procurement_id_code: d.procurements?.procurement_id_code,
+      office_name: d.procurements?.offices?.name || d.office_name || d.procurements?.office_name
     })) as Inspection[];
   },
 
   async getInspection(id: number): Promise<Inspection> {
-    const { data, error } = await supabase.from('inspections').select('*, procurements(title, procurement_id_code)').eq('id', id).single();
+    const { data, error } = await supabase.from('inspections').select('*, procurements(title, procurement_id_code, office_id, offices(name))').eq('id', id).single();
     if (error) throw new Error(error.message);
     return {
       ...data,
       procurement_title: data.procurements?.title,
-      procurement_id_code: data.procurements?.procurement_id_code
+      procurement_id_code: data.procurements?.procurement_id_code,
+      office_name: data.procurements?.offices?.name || data.office_name || data.procurements?.office_name
     } as Inspection;
   },
 
   async createInspection(dataObj: Partial<Inspection>): Promise<Inspection> {
-    const { data, error } = await supabase.from('inspections').insert([dataObj]).select().single();
+    const payload = {
+      ...dataObj,
+      inspection_code: dataObj.inspection_code || `INSP-${Date.now()}`,
+      inspection_date: dataObj.inspection_date || new Date().toISOString().slice(0, 10),
+      status: dataObj.status || 'Draft',
+    };
+    const { data, error } = await supabase.from('inspections').insert([payload]).select().single();
     if (error) throw new Error(error.message);
     return data as Inspection;
   },
@@ -188,14 +262,20 @@ export const api = {
   },
 
   async getInspectionChecklist(id: number, stage?: number): Promise<InspectionChecklistResult[]> {
-    let q = supabase.from('inspection_checklist_results').select('*, checklist_items(*)').eq('inspection_id', id);
-    const { data } = await q;
-    return (data || []).map(d => ({
-      ...d,
-      ...d.checklist_items,
-      result_id: d.id,
-      id: d.checklist_item_id
-    })) as InspectionChecklistResult[];
+    const stageQuery = stage ? `?stage=${encodeURIComponent(stage)}` : '';
+    const response = await fetch(`/api/inspections/${id}/checklist${stageQuery}`);
+    if (!response.ok) {
+      const error = await response.json().catch(() => null);
+      throw new Error(error?.error || 'चेकलिस्ट विवरण लोड गर्न सकिएन।');
+    }
+
+    const items = await response.json() as InspectionChecklistResult[];
+    return items.map((item) => ({
+      ...item,
+      compliance_status: item.compliance_status || 'जाँच बाँकी',
+      risk_level: item.risk_level || item.default_risk_level,
+      financial_impact: item.financial_impact || 0,
+    }));
   },
 
   async saveInspectionChecklistItem(inspectionId: number, payload: any): Promise<any> {

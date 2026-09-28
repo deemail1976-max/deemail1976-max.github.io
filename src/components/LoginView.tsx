@@ -47,7 +47,7 @@ export const LoginView: React.FC = () => {
               नेपाल सरकार | राष्ट्रिय सतर्कता केन्द्र
             </span>
             <h1 className="text-xl font-bold text-slate-900 leading-tight">
-              खरिद स्वमूल्याङ्कन तथा निरीक्षण प्रणाली
+              NVC खरिद विधि पालना सहयोगी
             </h1>
             <p className="text-sm text-slate-500 mt-2">
               प्रणालीमा प्रवेश गर्न आफ्नो विवरण भर्नुहोस्
