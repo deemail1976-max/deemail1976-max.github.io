@@ -321,6 +321,14 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({
   if (activeInspection) {
     const isCompleted = activeInspection.completion_percentage === 100;
     const isVerified = activeInspection.status === 'Verified';
+    const activeProcurement = procurements.find((p) => p.id === activeInspection.procurement_id) as
+      | (Procurement & { lead_inspector?: string })
+      | undefined;
+    const inspectionTeamDisplay =
+      activeInspection.inspection_team ||
+      activeInspection.lead_inspector_name ||
+      activeProcurement?.lead_inspector ||
+      '';
 
     return (
       <div className="space-y-5">
@@ -402,7 +410,7 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({
           <div>
             <span className="text-slate-400">निरीक्षण टोली:</span>
             <div className="font-semibold text-slate-100 mt-0.5 truncate">
-              {activeInspection.inspection_team || activeInspection.lead_inspector_name}
+              {inspectionTeamDisplay}
             </div>
           </div>
           <div>
