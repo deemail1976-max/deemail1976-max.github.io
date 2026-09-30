@@ -8,12 +8,16 @@ import {
   Lightbulb, 
   ArrowLeft, 
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
+  Search
 } from 'lucide-react';
-import { PROCUREMENT_STAGES, PROCUREMENT_SOURCE_NOTE } from '../data/procurementData';
+import { PROCUREMENT_STAGES } from '../data/procurementData';
+import type { ProcurementGuideDecision, ProcurementGuideOpinion } from '../data/procurementGuide';
 import { Language } from '../types/procurement';
 import { api } from '../../services/api';
-import type { ChecklistItem, ChecklistStage } from '../../types';
+import type { ChecklistItem } from '../../types';
+
+const PROCUREMENT_GUIDE_STAGE_IDS = ['plan', 'est', 'doc', 'call', 'sub', 'eval', 'intent', 'con', 'spec', 'cons'];
 
 interface ProcurementStagesViewProps {
   language: Language;
@@ -28,17 +32,20 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
   onSelectStage,
   onOpenChecklistForStage,
 }) => {
-  const [databaseStages, setDatabaseStages] = useState<ChecklistStage[]>([]);
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
   const [isLoadingChecklist, setIsLoadingChecklist] = useState(true);
   const [checklistLoadError, setChecklistLoadError] = useState('');
+  const [guideSearch, setGuideSearch] = useState('');
+  const [guideOpinions, setGuideOpinions] = useState<ProcurementGuideOpinion[]>([]);
+  const [guideDecisions, setGuideDecisions] = useState<ProcurementGuideDecision[]>([]);
+  const [isLoadingGuide, setIsLoadingGuide] = useState(true);
+  const [guideLoadError, setGuideLoadError] = useState('');
 
   useEffect(() => {
     let isMounted = true;
-    Promise.all([api.getProcurementStages(), api.getProcurementChecklistItems()])
-      .then(([stages, items]) => {
+    api.getProcurementChecklistItems()
+      .then((items) => {
         if (!isMounted) return;
-        setDatabaseStages(stages);
         setChecklistItems(items.filter((item) => item.is_active));
       })
       .catch((error) => {
@@ -54,12 +61,42 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
     };
   }, []);
 
-  const stages = databaseStages.length ? databaseStages : PROCUREMENT_STAGES;
-  const activeDatabaseStage = databaseStages.find((stage) => stage.stage_number === selectedStageId);
-  const currentStage = PROCUREMENT_STAGES.find((s) => s.id === selectedStageId) || PROCUREMENT_STAGES[0];
-  const activeTitle = activeDatabaseStage?.title_ne || currentStage.title;
-  const activeDescription = activeDatabaseStage?.description || currentStage.shortDesc;
+  useEffect(() => {
+    let isMounted = true;
+    import('../data/procurementGuide')
+      .then(({ PROCUREMENT_GUIDE_DECISIONS, PROCUREMENT_GUIDE_OPINIONS }) => {
+        if (!isMounted) return;
+        setGuideOpinions(PROCUREMENT_GUIDE_OPINIONS);
+        setGuideDecisions(PROCUREMENT_GUIDE_DECISIONS);
+      })
+      .catch((error) => {
+        console.error('Failed to load procurement guidance records:', error);
+        if (isMounted) setGuideLoadError('राय/निर्णय सामग्री लोड हुन सकेन।');
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingGuide(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const stages = PROCUREMENT_STAGES;
+  const currentStage = PROCUREMENT_STAGES.find((stage) => stage.id === selectedStageId) || PROCUREMENT_STAGES[0];
+  const activeTitle = currentStage.title;
+  const activeDescription = currentStage.shortDesc;
   const stageItems = checklistItems.filter((item) => item.stage_number === selectedStageId);
+  const guideStageId = PROCUREMENT_GUIDE_STAGE_IDS[selectedStageId - 1];
+  const stageOpinions = guideOpinions.filter((item) => item.stages.includes(guideStageId));
+  const stageDecisions = guideDecisions.filter((item) => item.stages.includes(guideStageId));
+  const searchText = guideSearch.trim().toLocaleLowerCase();
+  const filteredOpinions = stageOpinions.filter((item) =>
+    `${item.subject} ${item.opinion} ${item.src} ${item.date}`.toLocaleLowerCase().includes(searchText)
+  );
+  const filteredDecisions = stageDecisions.filter((item) =>
+    `${item.subject} ${item.decision} ${item.type} ${item.act} ${item.rule}`.toLocaleLowerCase().includes(searchText)
+  );
 
   const handlePrev = () => {
     if (selectedStageId > 1) {
@@ -86,7 +123,7 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <span className="bg-[#1b64b5] text-white text-xs font-bold px-2 py-0.5 rounded">
-              {language === 'ne' ? `${stages.length} चरणगत प्रक्रिया` : `${stages.length}-Phase Process`}
+              {language === 'ne' ? '१० चरणगत प्रक्रिया' : '10-Phase Process'}
             </span>
             <span className="text-xs text-slate-500 font-medium">
               सार्वजनिक खरिद ऐन, २०६३ र नियमावली, २०६४ बमोजिम
@@ -126,8 +163,8 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
           />
 
           {stages.map((stage) => {
-            const stageId = 'stage_number' in stage ? stage.stage_number : stage.id;
-            const stageTitle = 'title_ne' in stage ? stage.title_ne : stage.title;
+            const stageId = stage.id;
+            const stageTitle = stage.title;
             const isSelected = stageId === selectedStageId;
             const isCompleted = stageId < selectedStageId;
             return (
@@ -168,7 +205,7 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
         <div className="bg-linear-to-r from-[#185294] to-[#1b64b5] text-white p-2 sm:p-2">
           <div className="flex flex-wrap items-center justify-between gap-1">
             <span className="bg-amber-400 text-slate-950 text-xs font-black px-1 py-1 rounded shadow-xs uppercase tracking-wide">
-              {activeDatabaseStage ? `चरण ${activeDatabaseStage.stage_number}` : currentStage.stageNumber}
+              {currentStage.stageNumber}
             </span>
             <div className="flex items-center gap-1">
               <button
@@ -182,14 +219,14 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
           </div>
 
           <h3 className="text-md sm:text-md font-black mt-1">
-            {language === 'ne' ? activeTitle : activeDatabaseStage?.title_en || currentStage.titleEn}
+            {language === 'ne' ? activeTitle : currentStage.titleEn}
           </h3>
           <p className="text-blue-100 text-sm mt-1 leading-relaxed max-w-3xl">
             {language === 'ne' ? activeDescription : currentStage.shortDescEn}
           </p>
 
           {/* Quick Legal & Time badges */}
-          <div className={`${activeDatabaseStage ? 'hidden' : ''} flex flex-wrap items-center gap-3 mt-2 pt-2 border-t border-blue-400/30 text-xs`}>
+          <div className="flex flex-wrap items-center gap-3 mt-2 pt-2 border-t border-blue-400/30 text-xs">
             <div className="flex items-center gap-1.5 bg-blue-900/60 px-2.5 py-1 rounded border border-blue-300/30">
               <Scale className="w-4 h-4 text-amber-300 shrink-0" />
               <span><strong>कानूनी आधार:</strong> {currentStage.legalBasis}</span>
@@ -202,7 +239,7 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
         </div>
 
         {/* Content Body Grid */}
-        <div className={`${activeDatabaseStage ? 'hidden' : ''} p-5 sm:p-7 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50`}>
+        <div className="p-5 sm:p-7 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50">
           {/* 1. Key Responsibilities */}
           <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-xs space-y-3">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
@@ -278,8 +315,7 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
           </div>
         </div>
 
-        {activeDatabaseStage && (
-          <div className="space-y-4 bg-slate-50/50 p-4 sm:p-6">
+        <div className="space-y-4 bg-slate-50/50 p-4 sm:p-6">
             <p className="text-sm text-slate-700">{activeDescription}</p>
             <section className="space-y-3">
               <div className="flex items-center justify-between border-b border-slate-200 pb-2">
@@ -308,8 +344,97 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
                 <p className="text-sm text-slate-500">यस चरणका लागि सक्रिय जाँच बुँदा भेटिएन।</p>
               )}
             </section>
+        </div>
+
+        <section className="border-t border-slate-200 bg-white p-4 sm:p-6" aria-labelledby="stage-guidance-title">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+                <h4 id="stage-guidance-title" className="font-bold text-[#185294] text-base">
+                  {language === 'ne' ? 'यस चरणका द्विविधा, PPMO राय र PPRC निर्णय' : 'Stage Questions, PPMO Opinions and PPRC Decisions'}
+              </h4>
+              <p className="mt-1 text-xs text-slate-600">
+                  {isLoadingGuide
+                    ? 'राय र निर्णय सामग्री लोड हुँदैछ...'
+                    : language === 'ne'
+                    ? `${stageOpinions.length} राय परामर्श र ${stageDecisions.length} पुनरावलोकन निर्णय यस चरणसँग सम्भावित रूपमा सम्बन्धित छन्।`
+                    : `${stageOpinions.length} opinions and ${stageDecisions.length} review decisions are potentially related to this stage.`}
+              </p>
+            </div>
+            <label className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+              <input
+                type="search"
+                value={guideSearch}
+                onChange={(event) => setGuideSearch(event.target.value)}
+                placeholder={language === 'ne' ? 'द्विविधा, राय वा निर्णय खोज्नुहोस्' : 'Search questions, opinions or decisions'}
+                aria-label={language === 'ne' ? 'यस चरणका राय र निर्णय खोज्नुहोस्' : 'Search this stage opinions and decisions'}
+                className="w-full rounded border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 outline-none focus:border-[#1b64b5] focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
           </div>
-        )}
+
+          <p className="mt-3 rounded border border-blue-200 bg-blue-50 px-3 py-2 text-xs leading-relaxed text-blue-950">
+              {language === 'ne'
+                ? 'विषयसँग मिल्ने अभिलेखहरूलाई शब्दावलीका आधारमा चरणमा वर्गीकृत गरिएको हो; पुराना अभिलेखको पाठमा रूपान्तरण त्रुटि हुन सक्छ। निर्णयअघि मूल राय/निर्णय, हाल लागू ऐन-नियम र बोलपत्र कागजातसँग रुजु गर्नुहोस्।'
+                : 'Records are assigned to stages by keyword matching, and older records may contain transcription errors. Verify the original opinion or decision, current law and the solicitation before deciding.'}
+          </p>
+
+            <div className="mt-4 grid gap-6 lg:grid-cols-2">
+              <section aria-labelledby="ppmo-opinions-title">
+                <div className="mb-2 flex items-center justify-between border-b border-slate-200 pb-2">
+                  <h5 id="ppmo-opinions-title" className="font-bold text-slate-900 text-sm">PPMO का राय परामर्श</h5>
+                  <span className="text-xs text-slate-500">{filteredOpinions.length} भेटिए</span>
+                </div>
+                <div className="space-y-2">
+                  {isLoadingGuide && <p className="text-sm text-slate-500">राय सामग्री लोड हुँदैछ...</p>}
+                  {filteredOpinions.length ? filteredOpinions.slice(0, 20).map((item, index) => (
+                    <article key={`opinion-${item.no}-${index}`} className="rounded border border-slate-200 bg-slate-50 p-3">
+                      <p className="text-sm font-semibold leading-relaxed text-slate-900">{item.subject}</p>
+                      <details className="mt-2">
+                        <summary className="text-xs font-semibold text-[#185294]">राय परामर्शको व्यहोरा</summary>
+                        <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-700">{item.opinion}</p>
+                      </details>
+                      <p className="mt-2 text-[11px] text-slate-500">{item.src}{item.date ? ` · मिति ${item.date}` : ''}</p>
+                      {item.references.length > 0 && (
+                        <p className="mt-1 text-[11px] text-slate-500">स्रोतमा उल्लिखित व्यवस्था: {item.references.slice(0, 8).join(', ')}</p>
+                      )}
+                    </article>
+                  )) : !isLoadingGuide && !guideLoadError ? (
+                    <p className="rounded border border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-600">यस खोजसँग मिल्ने PPMO राय भेटिएन।</p>
+                  ) : null}
+                  {filteredOpinions.length > 20 && <p className="text-xs text-slate-500">पहिला २० राय देखाइएका छन्। थप सीमित गर्न खोज प्रयोग गर्नुहोस्।</p>}
+                </div>
+              </section>
+
+              <section aria-labelledby="pprc-decisions-title">
+                <div className="mb-2 flex items-center justify-between border-b border-slate-200 pb-2">
+                  <h5 id="pprc-decisions-title" className="font-bold text-slate-900 text-sm">PPRC का पुनरावलोकन निर्णय</h5>
+                  <span className="text-xs text-slate-500">{filteredDecisions.length} भेटिए</span>
+                </div>
+                <div className="space-y-2">
+                  {isLoadingGuide && <p className="text-sm text-slate-500">निर्णय सामग्री लोड हुँदैछ...</p>}
+                  {filteredDecisions.length ? filteredDecisions.slice(0, 20).map((item, index) => (
+                    <article key={`decision-${item.no}-${index}`} className="rounded border border-slate-200 bg-slate-50 p-3">
+                      <div className="mb-1 flex flex-wrap items-center gap-2 text-[11px]">
+                        <span className="font-semibold text-[#185294]">विवाद नं. {item.no}</span>
+                        <span className="rounded bg-white px-2 py-0.5 text-slate-600">{item.type}</span>
+                      </div>
+                      <p className="text-sm font-semibold leading-relaxed text-slate-900">{item.subject}</p>
+                      <details className="mt-2">
+                        <summary className="text-xs font-semibold text-[#185294]">आधार र निर्णय हेर्नुहोस्</summary>
+                        <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-700">{item.decision}</p>
+                        <p className="mt-2 text-[11px] text-slate-500">ऐन: {item.act} · नियमावली: {item.rule}</p>
+                      </details>
+                    </article>
+                  )) : !isLoadingGuide && !guideLoadError ? (
+                    <p className="rounded border border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-600">यस खोजसँग मिल्ने PPRC निर्णय भेटिएन।</p>
+                  ) : null}
+                  {filteredDecisions.length > 20 && <p className="text-xs text-slate-500">पहिला २० निर्णय देखाइएका छन्। थप सीमित गर्न खोज प्रयोग गर्नुहोस्।</p>}
+                </div>
+              </section>
+          </div>
+            {guideLoadError && <p role="alert" className="mt-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">{guideLoadError}</p>}
+        </section>
 
         {/* Stepper Navigation Controls (Next / Prev) */}
         <div className="bg-slate-100 p-4 border-t border-slate-200 flex items-center justify-between no-print">
