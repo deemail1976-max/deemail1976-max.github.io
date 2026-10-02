@@ -240,6 +240,25 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
 
         {/* Content Body Grid */}
         <div className="p-5 sm:p-7 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50">
+          <section className="md:col-span-2 bg-white p-5 rounded-lg border border-blue-200 shadow-xs space-y-3" aria-labelledby="stage-procedures-title">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+              <CheckCircle2 className="w-5 h-5 text-[#1b64b5]" />
+              <h4 id="stage-procedures-title" className="font-bold text-slate-900 text-sm">
+                {language === 'ne' ? 'यस चरणमा अपनाउनुपर्ने विस्तृत कार्यविधि' : 'Detailed Procedure for This Stage'}
+              </h4>
+            </div>
+            <ol className="grid gap-3 text-xs sm:text-sm text-slate-700">
+              {currentStage.procedures.map((procedure, idx) => (
+                <li key={idx} className="flex items-start gap-3 rounded border border-slate-100 bg-slate-50 p-3 leading-relaxed">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1b64b5] text-xs font-bold text-white">
+                    {idx + 1}
+                  </span>
+                  <span>{procedure}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+
           {/* 1. Key Responsibilities */}
           <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-xs space-y-3">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
@@ -311,8 +330,8 @@ export const ProcurementStagesView: React.FC<ProcurementStagesViewProps> = ({
               <div>
                 <strong>राष्ट्रिय सतर्कता केन्द्रको निर्देशन:</strong> {currentStage.officialAdvice}
               </div>
+              </div>
             </div>
-          </div>
         </div>
 
         <div className="space-y-4 bg-slate-50/50 p-4 sm:p-6">
